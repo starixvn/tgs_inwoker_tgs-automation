@@ -42,7 +42,6 @@ func getBrandTelegramChannels(config util.TgsConfig) []BrandTelegramChannel {
 func Run(ctx context.Context) {
 	config := util.GetConfig()
 	now := time.Now()
-
 	//for month
 	// firstDayOfLastMonth := time.Date(now.Year(), now.Month()-1, 1, 0, 0, 0, 0, time.UTC)
 	// firstDayOfThisMonth := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, time.UTC)
