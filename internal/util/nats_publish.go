@@ -1,6 +1,7 @@
 package util
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 
@@ -9,6 +10,7 @@ import (
 
 type NatsPublisherService interface {
 	Publish(chatId string, message string) error
+	PublishWithContext(ctx context.Context, requestId, chatId, message string) error
 	Close()
 }
 
@@ -19,8 +21,10 @@ type NatsPublisher struct {
 }
 
 type NatsData struct {
-	ChatId  string `json:"chat_id"`
-	Message string `json:"message"`
+	ChatId    string `json:"chat_id"`
+	Message   string `json:"message"`
+	Service   string `json:"service"`
+	RequestId string `json:"request_id"`
 }
 
 func NewNatsPublisher(natsURL string) (NatsPublisherService, error) {
@@ -47,6 +51,26 @@ func (mp *NatsPublisher) Close() {
 }
 
 func (mp *NatsPublisher) Publish(chatId string, message string) error {
+	msgContent := NatsData{
+		ChatId:  chatId,
+		Message: message,
+	}
+
+	msgBytes, err := json.Marshal(msgContent)
+	if err != nil {
+		return fmt.Errorf("error marshalling message: %w", err)
+	}
+
+	_, err = mp.js.Publish("telegram.messages", msgBytes)
+	if err != nil {
+		return fmt.Errorf("error publishing message: %w", err)
+	}
+
+	fmt.Printf("Message published: %+v\n", msgContent)
+	return nil
+}
+
+func (mp *NatsPublisher) PublishWithContext(ctx context.Context, requestId string, chatId string, message string) error {
 	msgContent := NatsData{
 		ChatId:  chatId,
 		Message: message,

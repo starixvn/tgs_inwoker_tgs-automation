@@ -2,6 +2,7 @@ package opentelemetry
 
 import (
 	"context"
+	"fmt"
 	"log"
 
 	"go.opentelemetry.io/otel"
@@ -13,21 +14,35 @@ import (
 	semconv "go.opentelemetry.io/otel/semconv/v1.9.0"
 )
 
-func InitTracerProvider(ctx context.Context, jaegerCollectorUrl string, service string, version string, environment string) *sdktrace.TracerProvider {
+func InitTracer(ctx context.Context, collectorUrl string, service string, version string, environment string) (func(context.Context) error, error) {
 	exporter, err := otlptracehttp.New(ctx,
-		otlptracehttp.WithEndpoint(jaegerCollectorUrl),
+		otlptracehttp.WithEndpoint(collectorUrl),
 		otlptracehttp.WithInsecure(),
 	)
 	if err != nil {
 		log.Fatalf("OTLP Trace http Creation: %s %v", service, err)
+		log.Fatal(err)
+		return exporter.Shutdown, nil
 	}
+
+	log.Println("get resources")
+
+	resources := getResource(service, version, environment)
+
+	log.Println("NewTracerProvider")
+
 	tp := sdktrace.NewTracerProvider(
+		sdktrace.WithSampler(sdktrace.AlwaysSample()),
 		sdktrace.WithBatcher(exporter),
-		sdktrace.WithResource(getResource(service, version, environment)),
+		sdktrace.WithResource(resources),
 	)
+
+	log.Printf(fmt.Sprintf("tp: %v", tp))
+
 	otel.SetTracerProvider(tp)
 	otel.SetTextMapPropagator(propagation.NewCompositeTextMapPropagator(propagation.TraceContext{}, propagation.Baggage{}))
-	return tp
+	fmt.Println("finish init tracer")
+	return exporter.Shutdown, nil
 }
 
 func getResource(

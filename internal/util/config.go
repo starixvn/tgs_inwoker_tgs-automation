@@ -10,25 +10,30 @@ import (
 )
 
 type TgsConfig struct {
-	CloudflareToken    string             `yaml:"cloudflare_token"`
-	ChromeDriverPath   string             `yaml:"chrome_driver_path"`
-	NatsUrl            string             `yaml:"nats_url"`
-	JaegerCollectorUrl string             `yaml:"jaeger_collector_url"`
-	GoogleSheet        GoogleSheetConfig  `yaml:"google_sheet"`
-	CdnNetwork         CdnConfig          `yaml:"cdn_network"`
-	Namecheap          NamecheapConfig    `yaml:"namecheap"`
-	Postgresql         PostgresqlConfig   `yaml:"postgresql"`
-	CreateSiteDb       PostgresqlConfig   `yaml:"create_site_db"`
-	Telegram           TelegramConfig     `yaml:"telegram"`
-	AwsS3              AwsS3Config        `yaml:"aws_s3"`
-	MomoTelegram       MomoTelegramConfig `yaml:"momo_telegram"`
-	LetsTalk           LetsTalkConfig     `yaml:"letstalk"`
-	Dockerhub          DockerhubConfig    `yaml:"dockerhub"`
-	ApiUrl             ApiUrl             `yaml:"api_url"`
+	CloudflareToken     string              `yaml:"cloudflare_token"`
+	ChromeDriverPath    string              `yaml:"chrome_driver_path"`
+	NatsUrl             string              `yaml:"nats_url"`
+	OpenTelemetryConfig OpenTelemetryConfig `yaml:"opentelemetry"`
+	GoogleSheet         GoogleSheetConfig   `yaml:"google_sheet"`
+	CdnNetwork          CdnConfig           `yaml:"cdn_network"`
+	Namecheap           NamecheapConfig     `yaml:"namecheap"`
+	Postgresql          PostgresqlConfig    `yaml:"postgresql"`
+	CreateSiteDb        PostgresqlConfig    `yaml:"create_site_db"`
+	Telegram            TelegramConfig      `yaml:"telegram"`
+	AwsS3               AwsS3Config         `yaml:"aws_s3"`
+	MomoTelegram        MomoTelegramConfig  `yaml:"momo_telegram"`
+	LetsTalk            LetsTalkConfig      `yaml:"letstalk"`
+	Dockerhub           DockerhubConfig     `yaml:"dockerhub"`
+	ApiUrl              ApiUrl              `yaml:"api_url"`
 }
 
 type ApiUrl struct {
 	BrandCert string `yaml:"brand_cert"`
+}
+
+type OpenTelemetryConfig struct {
+	JaegerCollectorUrl string `yaml:"jaeger_collector_url"`
+	OtelCollectorUrl   string `yaml:"otel_collector_url"`
 }
 
 type DockerhubConfig struct {

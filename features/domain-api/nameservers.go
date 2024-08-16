@@ -102,13 +102,6 @@ func GetNameServerHandler(
 	natsSvc util.NatsPublisherService,
 ) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		//tracer := otel.Tracer("domain-api")
-		// ctx, span := tracer.Start(c.Request.Context(), "GetNameServer")
-		// defer func() {
-		// 	span.End()
-		// 	ctx.Done()
-		// }()
-
 		var request GetNameServerRequest
 		if err := c.ShouldBindQuery(&request); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request data", "details": err.Error()})
@@ -120,27 +113,21 @@ func GetNameServerHandler(
 		targetNameServer, err := cloudflareApi.GetTargetNameServers(request.Domain)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Could not get target nameserver", "details": err.Error()})
-			//recordError(span, "could not get target nameserver", err)
 			return
 		}
 
 		originNameServer, err := getOriginalNameServer(request.Domain)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Could not get original nameserver", "details": err.Error()})
-			//recordError(span, "could not get original nameserver", err)
 			return
 		}
 
 		message := fmt.Sprintf("Domain: %s\nNameServers: %s\nOriginal Nameservers: %s", request.Domain, targetNameServer, originNameServer)
 
-		natsSvc.Publish(request.ChatId, message)
-
-		// subCtx, subSpan := tracer.Start(ctx, "Send message to telegram")
-		// err = telegram.SendMessageWithChatIdAndContext(subCtx, message, request.ChatId)
-		// if err != nil {
-		// 	fmt.Println("Failed to send Telegram message:", err)
-		// }
-		// subSpan.End()
+		err = natsSvc.Publish(request.ChatId, message)
+		if err != nil {
+			fmt.Println("Failed to send Telegram message:", err)
+		}
 		c.JSON(http.StatusOK, gin.H{"data": message})
 	}
 }

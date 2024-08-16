@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"log"
 	"net/http"
 	_ "tgs-automation/features/domain-api/docs"
 	jwttoken "tgs-automation/internal/jwt_token"
@@ -11,23 +12,38 @@ import (
 	"tgs-automation/internal/util"
 	"tgs-automation/pkg/cloudflare"
 	"tgs-automation/pkg/namecheap"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/iris-contrib/swagger/swaggerFiles"
-
 	ginSwagger "github.com/swaggo/gin-swagger"
+	"go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin"
 )
 
 func main() {
 
-	ctx := context.Background()
 	gin.SetMode(gin.ReleaseMode)
-	router := gin.New()
+	router := gin.Default()
 
 	config := util.GetConfig()
-	fmt.Println("config.JaegerCollectorUrl:", config.JaegerCollectorUrl)
-	opentelemetry.InitTracerProvider(ctx, config.JaegerCollectorUrl, "domain-api", "0.1.0", "prod")
-	router.Use(middleware.TraceMiddleware("domain-api"))
+	fmt.Println("config.JaegerCollectorUrl:", config.OpenTelemetryConfig.JaegerCollectorUrl)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	cleanup, err := opentelemetry.InitTracer(ctx, config.OpenTelemetryConfig.JaegerCollectorUrl, "domain-api", "0.1.0", "prod")
+
+	if err != nil {
+		log.Printf("Failed to init otel tracer:%v", err)
+		return
+	}
+	defer func() {
+		cancel()
+		if err := cleanup(ctx); err != nil {
+			log.Printf("Failed to clueanup otel tracer: %v", err)
+		}
+	}()
+	fmt.Println("enter otel middleware")
+	// router.Use(middleware.TraceMiddleware("domain-api"))
+	router.Use(otelgin.Middleware("domain-api"))
 	natsSvc, err := util.NewNatsPublisher(config.NatsUrl)
 	defer natsSvc.Close()
 

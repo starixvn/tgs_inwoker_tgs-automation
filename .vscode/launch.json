@@ -19,6 +19,7 @@
             "program": "${workspaceFolder}\\features\\domain-api",
             "env": {
                 "CONFIGPATH": "D:\\TGS\\secrets\\config.yaml"
+                
             }
         }
     ]

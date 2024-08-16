@@ -41,16 +41,16 @@ func main() {
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
 
-	tracerProvider, err := setupTracer()
-	if err != nil {
-		log.LogFatal(fmt.Sprintf("Error setting up tracer: %v", err))
-		return
-	}
-	defer func() {
-		if err := tracerProvider.Shutdown(ctx); err != nil {
-			log.LogFatal(fmt.Sprintf("Failed to shutdown TracerProvider: %v", err))
-		}
-	}()
+	// tracerProvider, err := setupTracer()
+	// if err != nil {
+	// 	log.LogFatal(fmt.Sprintf("Error setting up tracer: %v", err))
+	// 	return
+	// }
+	// defer func() {
+	// 	if err := tracerProvider.Shutdown(ctx); err != nil {
+	// 		log.LogFatal(fmt.Sprintf("Failed to shutdown TracerProvider: %v", err))
+	// 	}
+	// }()
 
 	go Run(ctx)
 
