@@ -2,6 +2,7 @@ package jwttoken
 
 import (
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -34,6 +35,18 @@ func GenerateToken() (string, error) {
 }
 
 func TokenHandler(c *gin.Context) {
+	// Extract the API key from the request header
+	apiKey := c.GetHeader("apikey")
+
+	// Retrieve the expected API key from the environment variables
+	expectedApiKey := os.Getenv("API_KEY")
+
+	// Validate the API key
+	if apiKey != expectedApiKey {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+
 	tokenString, err := GenerateToken()
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Could not generate token"})
