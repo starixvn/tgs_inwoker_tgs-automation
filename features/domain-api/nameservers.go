@@ -1,7 +1,11 @@
 package main
 
 import (
+	"bytes"
+	"context"
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"strings"
 	"tgs-automation/internal/log"
@@ -11,6 +15,8 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/miekg/dns"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/propagation"
 )
 
 type GetNameServerRequest struct {
@@ -60,16 +66,8 @@ func UpdateNameServerHandler(
 			message = fmt.Sprintf("修改nameserver: %s 失敗\n原因: %s\nNameServers: %s", request.Domain, response.Errors.Error, request.NameServers)
 		}
 
-		// traceCtx := trace.SpanContextFromContext(ctx)
-		// header := make(nats.Header)
-		// header.Set("traceparent", traceCtx.TraceState().String())
-		// propagator := propagation.TraceContext{}
-		// propagator.Inject(ctx, propagation.HeaderCarrier(header))
-
 		_ = natsSvc.PublishWithContext(c.Request.Context(), "domain-api", request.ChatId, message)
 
-		// span.AddEvent("end to send message to telegram", trace.WithTimestamp(time.Now()))
-		// span.SetStatus(codes.Ok, "")
 		c.JSON(http.StatusOK, gin.H{"data": message})
 	}
 }
@@ -113,7 +111,8 @@ func GetNameServerHandler(
 
 		message := fmt.Sprintf("Domain: %s\nNameServers: %s\nOriginal Nameservers: %s", request.Domain, targetNameServer, originNameServer)
 
-		err = natsSvc.Publish(request.ChatId, message)
+		//err = natsSvc.Publish(request.ChatId, message)
+		err = sendTelegram(c.Request.Context(), request.ChatId, message)
 		if err != nil {
 			fmt.Println("Failed to send Telegram message:", err)
 		}
@@ -150,4 +149,106 @@ func getOriginalNameServer(domain string) (string, error) {
 	}
 
 	return strings.Join(nsRecords, " "), nil
+}
+
+func sendTelegram(ctx context.Context, chatID, message string) error {
+	tokenURL := "http://localhost:8081/token" // 获取 Token 的端点
+	sendURL := "http://localhost:8081/send"   // 发送消息的端点
+
+	// 获取 Token
+	token, err := getToken(ctx, tokenURL)
+	if err != nil {
+		fmt.Println("Error getting token:", err)
+		return err
+	}
+
+	// 调用 sendMessage 函数发送请求
+	if err := sendMessage(ctx, sendURL, token, message, chatID); err != nil {
+		fmt.Println("Error:", err)
+		return err
+	}
+	return nil
+}
+
+func getToken(ctx context.Context, url string) (string, error) {
+	// 创建请求
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return "", fmt.Errorf("error creating request: %w", err)
+	}
+
+	req.Header.Set("apikey", "123456")
+
+	otel.GetTextMapPropagator().Inject(ctx, propagation.HeaderCarrier(req.Header))
+
+	// 发送请求
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return "", fmt.Errorf("error sending request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	// 检查响应状态
+	if resp.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("request failed with status: %s", resp.Status)
+	}
+
+	// 读取响应体
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return "", fmt.Errorf("error reading response body: %w", err)
+	}
+
+	// 定义用于解析 JSON 响应的结构体
+	var result struct {
+		Token string `json:"token"`
+	}
+
+	// 解析 JSON 响应
+	if err := json.Unmarshal(body, &result); err != nil {
+		return "", fmt.Errorf("error unmarshaling JSON: %w", err)
+	}
+
+	// 返回获取的 Token
+	return result.Token, nil
+}
+
+func sendMessage(ctx context.Context, url, token, message, chatID string) error {
+	// 设置请求体
+	data := map[string]interface{}{
+		"message": message,
+		"chat_id": chatID,
+	}
+	jsonData, err := json.Marshal(data)
+	if err != nil {
+		return fmt.Errorf("error marshaling JSON: %w", err)
+	}
+
+	// 创建请求
+	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonData))
+	if err != nil {
+		return fmt.Errorf("error creating request: %w", err)
+	}
+
+	// 设置请求头
+	req.Header.Set("Authorization", "Bearer "+token)
+	req.Header.Set("Content-Type", "application/json")
+
+	otel.GetTextMapPropagator().Inject(ctx, propagation.HeaderCarrier(req.Header))
+	// 发送请求
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return fmt.Errorf("error sending request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	// 检查响应状态
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("request failed with status: %s", resp.Status)
+	}
+
+	fmt.Println("Request was successful.")
+	return nil
 }

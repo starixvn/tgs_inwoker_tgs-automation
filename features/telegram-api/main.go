@@ -21,7 +21,7 @@ import (
 
 func main() {
 
-	serviceName := "nats-api"
+	serviceName := "telegram-api"
 	gin.SetMode(gin.ReleaseMode)
 	router := gin.Default()
 
@@ -48,7 +48,7 @@ func main() {
 		fmt.Println("cannot get nats svc.")
 	}
 	server := &http.Server{
-		Addr:    ":8080",
+		Addr:    ":8081",
 		Handler: router,
 	}
 

@@ -1,12 +1,15 @@
 package jwttoken
 
 import (
+	"fmt"
+	"log"
 	"net/http"
 	"os"
 	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt"
+	"github.com/joho/godotenv"
 )
 
 var JwtKey = []byte("secret_key")
@@ -35,14 +38,20 @@ func GenerateToken() (string, error) {
 }
 
 func TokenHandler(c *gin.Context) {
-	// Extract the API key from the request header
 	apiKey := c.GetHeader("apikey")
 
-	// Retrieve the expected API key from the environment variables
-	expectedApiKey := os.Getenv("API_KEY")
+	log.Println("apikey:", apiKey)
 
-	// Validate the API key
-	if apiKey != expectedApiKey {
+	err := godotenv.Load()
+	if err != nil {
+		fmt.Println("Error loading .env file:", err)
+		return
+	}
+
+	expectedApiKey := os.Getenv("API_KEY")
+	log.Println("API_KEY:", expectedApiKey)
+
+	if apiKey != expectedApiKey || apiKey == "" {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 		return
 	}
