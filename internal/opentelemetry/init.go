@@ -2,7 +2,6 @@ package opentelemetry
 
 import (
 	"context"
-	"fmt"
 	"log"
 
 	"go.opentelemetry.io/otel"
@@ -25,11 +24,7 @@ func InitTracer(ctx context.Context, collectorUrl string, service string, versio
 		return exporter.Shutdown, nil
 	}
 
-	log.Println("get resources")
-
 	resources := getResource(service, version, environment)
-
-	log.Println("NewTracerProvider")
 
 	tp := sdktrace.NewTracerProvider(
 		sdktrace.WithSampler(sdktrace.AlwaysSample()),
@@ -37,11 +32,8 @@ func InitTracer(ctx context.Context, collectorUrl string, service string, versio
 		sdktrace.WithResource(resources),
 	)
 
-	log.Printf(fmt.Sprintf("tp: %v", tp))
-
 	otel.SetTracerProvider(tp)
 	otel.SetTextMapPropagator(propagation.NewCompositeTextMapPropagator(propagation.TraceContext{}, propagation.Baggage{}))
-	fmt.Println("finish init tracer")
 	return exporter.Shutdown, nil
 }
 

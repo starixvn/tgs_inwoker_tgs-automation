@@ -4,13 +4,16 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 
 	"github.com/nats-io/nats.go"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/propagation"
 )
 
 type NatsPublisherService interface {
 	Publish(chatId string, message string) error
-	PublishWithContext(ctx context.Context, requestId, chatId, message string) error
+	PublishWithContext(ctx context.Context, serviceName, chatId, message string) error
 	Close()
 }
 
@@ -21,10 +24,9 @@ type NatsPublisher struct {
 }
 
 type NatsData struct {
-	ChatId    string `json:"chat_id"`
-	Message   string `json:"message"`
-	Service   string `json:"service"`
-	RequestId string `json:"request_id"`
+	ChatId      string `json:"chat_id"`
+	Message     string `json:"message"`
+	ServiceName string `json:"service_name"`
 }
 
 func NewNatsPublisher(natsURL string) (NatsPublisherService, error) {
@@ -70,10 +72,21 @@ func (mp *NatsPublisher) Publish(chatId string, message string) error {
 	return nil
 }
 
-func (mp *NatsPublisher) PublishWithContext(ctx context.Context, requestId string, chatId string, message string) error {
+func (mp *NatsPublisher) PublishWithContext(ctx context.Context, serviceName, chatId, message string) error {
+	tracer := otel.Tracer(serviceName)
+	ctx, span := tracer.Start(ctx, "nats-publish")
+	defer span.End()
+
+	headers := nats.Header{}
+	headers.Set("traceparent", "nats")
+
+	propagator := propagation.TraceContext{}
+	propagator.Inject(ctx, propagation.HeaderCarrier(headers))
+
 	msgContent := NatsData{
-		ChatId:  chatId,
-		Message: message,
+		ChatId:      chatId,
+		Message:     message,
+		ServiceName: serviceName,
 	}
 
 	msgBytes, err := json.Marshal(msgContent)
@@ -81,11 +94,16 @@ func (mp *NatsPublisher) PublishWithContext(ctx context.Context, requestId strin
 		return fmt.Errorf("error marshalling message: %w", err)
 	}
 
-	_, err = mp.js.Publish("telegram.messages", msgBytes)
+	// 發送消息
+	_, err = mp.js.PublishMsg(&nats.Msg{
+		Subject: "telegram.messages",
+		Data:    msgBytes,
+		Header:  headers,
+	})
+
 	if err != nil {
-		return fmt.Errorf("error publishing message: %w", err)
+		log.Fatalf("Error publishing message: %v", err)
 	}
 
-	fmt.Printf("Message published: %+v\n", msgContent)
 	return nil
 }

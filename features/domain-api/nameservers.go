@@ -8,13 +8,9 @@ import (
 	"tgs-automation/internal/util"
 	"tgs-automation/pkg/cloudflare"
 	"tgs-automation/pkg/namecheap"
-	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/miekg/dns"
-	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/codes"
-	"go.opentelemetry.io/otel/trace"
 )
 
 type GetNameServerRequest struct {
@@ -44,24 +40,15 @@ func UpdateNameServerHandler(
 	natsSvc util.NatsPublisherService,
 ) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		tracer := otel.Tracer("domain-api")
-		ctx, span := tracer.Start(c.Request.Context(), "UpdateNameServer")
-		defer func() {
-			span.End()
-			ctx.Done()
-		}()
-
 		printAllFields(c)
 		var request UpdateNameServerRequest
 		if err := c.BindJSON(&request); err != nil {
-			span.RecordError(err)
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid update nameserver request data", "details": err.Error()})
 			return
 		}
 
 		response, err := svc.UpdateNameServer(request.Domain, request.NameServers)
 		if err != nil {
-			span.RecordError(err)
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid update nameserver", "details": err.Error()})
 			return
 		}
@@ -69,18 +56,20 @@ func UpdateNameServerHandler(
 		var message string
 		if strings.Contains(response.Status, "OK") {
 			message = fmt.Sprintf("修改nameserver: %s 成功\nNameServers: %s", request.Domain, request.NameServers)
-			span.AddEvent("Update nameserver successfully")
 		} else {
 			message = fmt.Sprintf("修改nameserver: %s 失敗\n原因: %s\nNameServers: %s", request.Domain, response.Errors.Error, request.NameServers)
-			span.AddEvent("Update nameserver failed")
 		}
 
-		span.AddEvent("start to send message to telegram", trace.WithTimestamp(time.Now()))
+		// traceCtx := trace.SpanContextFromContext(ctx)
+		// header := make(nats.Header)
+		// header.Set("traceparent", traceCtx.TraceState().String())
+		// propagator := propagation.TraceContext{}
+		// propagator.Inject(ctx, propagation.HeaderCarrier(header))
 
-		natsSvc.Publish(request.ChatId, message)
+		_ = natsSvc.PublishWithContext(c.Request.Context(), "domain-api", request.ChatId, message)
 
-		span.AddEvent("end to send message to telegram", trace.WithTimestamp(time.Now()))
-		span.SetStatus(codes.Ok, "")
+		// span.AddEvent("end to send message to telegram", trace.WithTimestamp(time.Now()))
+		// span.SetStatus(codes.Ok, "")
 		c.JSON(http.StatusOK, gin.H{"data": message})
 	}
 }
@@ -132,10 +121,10 @@ func GetNameServerHandler(
 	}
 }
 
-func recordError(span trace.Span, message string, err error) {
-	span.RecordError(fmt.Errorf("%v: %w", message, err))
-	span.SetStatus(codes.Error, message)
-}
+// func recordError(span trace.Span, message string, err error) {
+// 	span.RecordError(fmt.Errorf("%v: %w", message, err))
+// 	span.SetStatus(codes.Error, message)
+// }
 
 func getOriginalNameServer(domain string) (string, error) {
 	var nsRecords []string

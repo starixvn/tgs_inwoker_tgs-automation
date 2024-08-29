@@ -26,10 +26,10 @@ func main() {
 	router := gin.Default()
 
 	config := util.GetConfig()
-	fmt.Println("config.JaegerCollectorUrl:", config.OpenTelemetryConfig.JaegerCollectorUrl)
+	fmt.Println("config.OtelCollectorUrl:", config.OpenTelemetryConfig.OtelCollectorUrl)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	cleanup, err := opentelemetry.InitTracer(ctx, config.OpenTelemetryConfig.JaegerCollectorUrl, "domain-api", "0.1.0", "prod")
+	cleanup, err := opentelemetry.InitTracer(ctx, config.OpenTelemetryConfig.OtelCollectorUrl, "domain-api", "0.1.0", "prod")
 
 	if err != nil {
 		log.Printf("Failed to init otel tracer:%v", err)
@@ -41,11 +41,13 @@ func main() {
 			log.Printf("Failed to clueanup otel tracer: %v", err)
 		}
 	}()
-	fmt.Println("enter otel middleware")
-	// router.Use(middleware.TraceMiddleware("domain-api"))
+
 	router.Use(otelgin.Middleware("domain-api"))
 	natsSvc, err := util.NewNatsPublisher(config.NatsUrl)
-	defer natsSvc.Close()
+
+	defer func() {
+		natsSvc.Close()
+	}()
 
 	if err != nil {
 		fmt.Println("cannot get nats svc.")
