@@ -111,6 +111,15 @@ build_domain_api:
     changes:
       - features/domain-api/**/*
 
+build_telegram_api:
+  extends: .docker_build_template
+  variables:
+    FEATURE_NAME: "telegram-api"
+    IMAGE_NAME: "$Registry/$FEATURE_NAME"
+  only:
+    changes:
+      - features/telegram-api/**/*
+
 deploy_create_site:
   stage: deploy
   needs: ["build_create_site"]
@@ -142,3 +151,19 @@ deploy_domain_api:
   only:
     changes:
       - features/domain-api/**/*
+
+deploy_telegram_api:
+  stage: deploy
+  needs: ["build_telegram_api"]
+  variables:
+    FEATURE_NAME: "telegram-api"
+  before_script:
+    - export KUBECONFIG="$kubeconfig_prod"
+    - kubectl config view
+  script:
+    - export TAG=$(cat tag.txt) # 讀取之前保存的 TAG
+    - echo "Deploying image with tag:$TAG"
+    - kubectl -n devops set image deployment/telegram-api telegram-api="$Registry/$FEATURE_NAME:$TAG" # 更新 Kubernetes 部署
+  only:
+    changes:
+      - features/telegram-api/**/*
