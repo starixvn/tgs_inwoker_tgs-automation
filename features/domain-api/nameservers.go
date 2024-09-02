@@ -5,18 +5,17 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"strings"
+	"tgs-automation/internal/httpclient"
 	"tgs-automation/internal/log"
 	"tgs-automation/internal/util"
 	"tgs-automation/pkg/cloudflare"
 	"tgs-automation/pkg/namecheap"
 
 	"github.com/gin-gonic/gin"
+	"github.com/joho/godotenv"
 	"github.com/miekg/dns"
-	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/propagation"
 )
 
 type GetNameServerRequest struct {
@@ -85,6 +84,7 @@ func UpdateNameServerHandler(
 // @Security ApiKeyAuth
 // @Router /nameservers [get]
 func GetNameServerHandler(
+	config util.TgsConfig,
 	cloudflareApi cloudflare.CloudflareApi,
 	natsSvc util.NatsPublisherService,
 ) gin.HandlerFunc {
@@ -112,7 +112,9 @@ func GetNameServerHandler(
 		message := fmt.Sprintf("Domain: %s\nNameServers: %s\nOriginal Nameservers: %s", request.Domain, targetNameServer, originNameServer)
 
 		//err = natsSvc.Publish(request.ChatId, message)
-		err = sendTelegram(c.Request.Context(), request.ChatId, message)
+
+		log.LogInfo(fmt.Sprintf("TelegramApi", config.ApiUrl.TelegramApi))
+		err = sendTelegram(c.Request.Context(), config.ApiUrl.TelegramApi, config.ApiUrl.TelegramApiKey, request.ChatId, message)
 		if err != nil {
 			fmt.Println("Failed to send Telegram message:", err)
 		}
@@ -151,103 +153,70 @@ func getOriginalNameServer(domain string) (string, error) {
 	return strings.Join(nsRecords, " "), nil
 }
 
-func sendTelegram(ctx context.Context, chatID, message string) error {
-	tokenURL := "http://localhost:8081/token" // 获取 Token 的端点
-	sendURL := "http://localhost:8081/send"   // 发送消息的端点
+func sendTelegram(ctx context.Context, telegramApi, apikey, chatID, message string) error {
+
+	err := godotenv.Load()
+	if err != nil {
+		fmt.Println("Error loading .env file:", err)
+	}
+
+	tokenURL := fmt.Sprintf(telegramApi + "token")
+	sendURL := fmt.Sprintf(telegramApi + "send")
 
 	// 获取 Token
-	token, err := getToken(ctx, tokenURL)
+	log.LogInfo("apikey:" + apikey)
+	token, err := getToken(ctx, tokenURL, apikey)
 	if err != nil {
 		fmt.Println("Error getting token:", err)
 		return err
 	}
 
 	// 调用 sendMessage 函数发送请求
-	if err := sendMessage(ctx, sendURL, token, message, chatID); err != nil {
+	if err := sendMessage(ctx, sendURL, token, apikey, message, chatID); err != nil {
 		fmt.Println("Error:", err)
 		return err
 	}
 	return nil
 }
 
-func getToken(ctx context.Context, url string) (string, error) {
-	// 创建请求
-	req, err := http.NewRequest("GET", url, nil)
+type TokenResponse struct {
+	Token string `json:"token"`
+}
+
+func getToken(ctx context.Context, url, apikey string) (string, error) {
+	resp, err := httpclient.SendHTTPRequest(ctx, "GET", url, "", apikey, nil)
 	if err != nil {
-		return "", fmt.Errorf("error creating request: %w", err)
-	}
-
-	req.Header.Set("apikey", "123456")
-
-	otel.GetTextMapPropagator().Inject(ctx, propagation.HeaderCarrier(req.Header))
-
-	// 发送请求
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		return "", fmt.Errorf("error sending request: %w", err)
+		log.LogError("SendHTTPRequest Error:" + err.Error())
+		return "", err
 	}
 	defer resp.Body.Close()
 
-	// 检查响应状态
-	if resp.StatusCode != http.StatusOK {
-		return "", fmt.Errorf("request failed with status: %s", resp.Status)
+	var result TokenResponse
+	if err := httpclient.ParseJSONResponse(resp.Body, &result); err != nil {
+		log.LogError("Parse Error:" + err.Error())
+		return "", err
 	}
 
-	// 读取响应体
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return "", fmt.Errorf("error reading response body: %w", err)
-	}
-
-	// 定义用于解析 JSON 响应的结构体
-	var result struct {
-		Token string `json:"token"`
-	}
-
-	// 解析 JSON 响应
-	if err := json.Unmarshal(body, &result); err != nil {
-		return "", fmt.Errorf("error unmarshaling JSON: %w", err)
-	}
-
-	// 返回获取的 Token
 	return result.Token, nil
 }
 
-func sendMessage(ctx context.Context, url, token, message, chatID string) error {
-	// 设置请求体
+// sendMessage sends a message to the specified URL using the provided token and chat ID.
+func sendMessage(ctx context.Context, url, token, apikey, message, chatID string) error {
 	data := map[string]interface{}{
 		"message": message,
 		"chat_id": chatID,
 	}
+
 	jsonData, err := json.Marshal(data)
 	if err != nil {
 		return fmt.Errorf("error marshaling JSON: %w", err)
 	}
 
-	// 创建请求
-	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonData))
+	resp, err := httpclient.SendHTTPRequest(ctx, "POST", url, token, apikey, bytes.NewBuffer(jsonData))
 	if err != nil {
-		return fmt.Errorf("error creating request: %w", err)
-	}
-
-	// 设置请求头
-	req.Header.Set("Authorization", "Bearer "+token)
-	req.Header.Set("Content-Type", "application/json")
-
-	otel.GetTextMapPropagator().Inject(ctx, propagation.HeaderCarrier(req.Header))
-	// 发送请求
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		return fmt.Errorf("error sending request: %w", err)
+		return err
 	}
 	defer resp.Body.Close()
-
-	// 检查响应状态
-	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("request failed with status: %s", resp.Status)
-	}
 
 	fmt.Println("Request was successful.")
 	return nil

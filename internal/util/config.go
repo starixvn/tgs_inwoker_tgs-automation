@@ -28,7 +28,9 @@ type TgsConfig struct {
 }
 
 type ApiUrl struct {
-	BrandCert string `yaml:"brand_cert"`
+	BrandCert      string `yaml:"brand_cert"`
+	TelegramApi    string `yaml:"telegram_api"`
+	TelegramApiKey string `yaml:"telegram_apikey"`
 }
 
 type OpenTelemetryConfig struct {
