@@ -46,6 +46,7 @@ func printAllFields(c *gin.Context) {
 // @Failure      400     {object}  map[string]interface{}
 // @Router       /domain/price [get]
 func GetDomainPriceHandler(
+	config util.TgsConfig,
 	api namecheap.NamecheapApi,
 	natsSvc util.NatsPublisherService,
 ) gin.HandlerFunc {
@@ -90,7 +91,13 @@ func GetDomainPriceHandler(
 
 		message := fmt.Sprintf("[Get Domain Price]\ndomain: %s\nRegular Price: %s\nPromotion Price: %s", request.Domain, domainPriceResponse.RegularPrice, domainPriceResponse.Price)
 
-		natsSvc.Publish(request.ChatId, message)
+		//natsSvc.Publish(request.ChatId, message)
+
+		err = sendTelegram(c.Request.Context(), config.ApiUrl.TelegramApi, config.ApiUrl.TelegramApiKey, request.ChatId, message)
+		if err != nil {
+			fmt.Println("Failed to send Telegram message:", err)
+		}
+
 		c.JSON(http.StatusBadRequest, gin.H{"info": message})
 	}
 }

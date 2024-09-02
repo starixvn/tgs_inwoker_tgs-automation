@@ -30,6 +30,7 @@ type CreateDomainRequest struct {
 // @Failure 400 {object} map[string]interface{} "error"
 // @Router /domain [post]
 func CreateDomainHandler(
+	config util.TgsConfig,
 	api namecheap.NamecheapApi,
 	natsSvc util.NatsPublisherService,
 ) gin.HandlerFunc {
@@ -68,7 +69,12 @@ func CreateDomainHandler(
 		balance, _ := parseXml(balanceResponse, "//ApiResponse/CommandResponse/UserGetBalancesResult/@AvailableBalance")
 
 		message := formatDomainMessage(status, request.Domain, promotionCode, chargeAmount, errorMsg, balance, currency)
-		natsSvc.Publish(request.ChatId, message)
+		//natsSvc.Publish(request.ChatId, message)
+
+		err = sendTelegram(c.Request.Context(), config.ApiUrl.TelegramApi, config.ApiUrl.TelegramApiKey, request.ChatId, message)
+		if err != nil {
+			fmt.Println("Failed to send Telegram message:", err)
+		}
 
 		c.JSON(http.StatusOK, gin.H{"status": status, "message": message})
 	}

@@ -67,9 +67,9 @@ func main() {
 	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 	router.GET("/token", jwttoken.TokenHandler)
 	router.GET("/nameserver", middleware.AuthMiddleware(), GetNameServerHandler(config, cloudflareSvc, natsSvc))
-	router.PUT("/nameserver", middleware.AuthMiddleware(), UpdateNameServerHandler(namecheapSvc, natsSvc))
-	router.GET("/domain/price", middleware.AuthMiddleware(), GetDomainPriceHandler(namecheapSvc, natsSvc))
-	router.POST("/domain", middleware.AuthMiddleware(), CreateDomainHandler(namecheapSvc, natsSvc))
+	router.PUT("/nameserver", middleware.AuthMiddleware(), UpdateNameServerHandler(config, namecheapSvc, natsSvc))
+	router.GET("/domain/price", middleware.AuthMiddleware(), GetDomainPriceHandler(config, namecheapSvc, natsSvc))
+	router.POST("/domain", middleware.AuthMiddleware(), CreateDomainHandler(config, namecheapSvc, natsSvc))
 	err = server.ListenAndServe()
 
 	if err != nil {

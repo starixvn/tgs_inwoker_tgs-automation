@@ -41,6 +41,7 @@ type UpdateNameServerRequest struct {
 // @Security ApiKeyAuth
 // @Router /nameservers [put]
 func UpdateNameServerHandler(
+	config util.TgsConfig,
 	svc namecheap.NamecheapApi,
 	natsSvc util.NatsPublisherService,
 ) gin.HandlerFunc {
@@ -65,7 +66,11 @@ func UpdateNameServerHandler(
 			message = fmt.Sprintf("修改nameserver: %s 失敗\n原因: %s\nNameServers: %s", request.Domain, response.Errors.Error, request.NameServers)
 		}
 
-		_ = natsSvc.PublishWithContext(c.Request.Context(), "domain-api", request.ChatId, message)
+		//_ = natsSvc.PublishWithContext(c.Request.Context(), "domain-api", request.ChatId, message)
+		err = sendTelegram(c.Request.Context(), config.ApiUrl.TelegramApi, config.ApiUrl.TelegramApiKey, request.ChatId, message)
+		if err != nil {
+			fmt.Println("Failed to send Telegram message:", err)
+		}
 
 		c.JSON(http.StatusOK, gin.H{"data": message})
 	}
