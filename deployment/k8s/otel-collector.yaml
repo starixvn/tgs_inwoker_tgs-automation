@@ -21,10 +21,11 @@ spec:
           image: otel/opentelemetry-collector:latest
           resources:
             limits:
+              cpu: 200m
               memory: 200Mi
             requests:
-              cpu: 100m
-              memory: 50Mi
+              cpu: 200m
+              memory: 200Mi
           ports:
             - containerPort: 13133
               hostPort: 13134
