@@ -21,7 +21,7 @@ data:
       logging:
         loglevel: debug
       otlp/jaeger:
-        endpoint: jaeger-eck-collector-headless.observability:4318
+        endpoint: jaeger-eck-collector.observability:4318
         tls:
           insecure: true
     extensions:
