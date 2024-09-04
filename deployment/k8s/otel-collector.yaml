@@ -18,7 +18,7 @@ spec:
     spec:
       containers:
         - name: otel-collector
-          image: otel/opentelemetry-collector:latest
+          image: otel/opentelemetry-collector:0.41.0
           resources:
             limits:
               cpu: 200m
@@ -41,13 +41,13 @@ spec:
           readinessProbe:
             httpGet:
               path: /healthz
-              port: 13134
+              port: 13133
             initialDelaySeconds: 1
             periodSeconds: 3
           livenessProbe:
             httpGet:
               path: /healthz
-              port: 13134
+              port: 13133
             initialDelaySeconds: 10
             periodSeconds: 3
       terminationGracePeriodSeconds: 30
