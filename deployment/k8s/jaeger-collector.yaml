@@ -23,11 +23,11 @@ spec:
         image: jaegertracing/jaeger-collector:1.42.0
         env:
         - name: COLLECTOR_OTLP_ENABLED
-          value: true
+          value: "true"
         - name: SPAN_STORAGE_TYPE
-          value: elasticsearch
+          value: "elasticsearch"
         - name: ES_SERVER_URLS
-          value: http://elasticsearch-es-default.eck:9200
+          value: "http://elasticsearch-es-default.eck:9200"
         ports:
         - containerPort: 14250
           name: grpc
