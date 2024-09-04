@@ -15,5 +15,5 @@ spec:
     - name: otlp
       protocol: TCP
       port: 4318
-      targetPort: 4319
+      targetPort: 4318
 
