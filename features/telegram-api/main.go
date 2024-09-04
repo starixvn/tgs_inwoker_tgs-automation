@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 	_ "tgs-automation/features/domain-api/docs"
 	jwttoken "tgs-automation/internal/jwt_token"
 	middleware "tgs-automation/internal/middleware"
@@ -27,7 +28,6 @@ const (
 )
 
 func main() {
-
 	gin.SetMode(gin.ReleaseMode)
 	router := gin.Default()
 
@@ -35,7 +35,7 @@ func main() {
 	fmt.Println("config.OtelCollectorUrl:", config.OpenTelemetryConfig.OtelCollectorUrl)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	cleanup, err := opentelemetry.InitTracer(ctx, config.OpenTelemetryConfig.OtelCollectorUrl, ServiceName, "0.1.0", "prod")
+	cleanup, err := opentelemetry.InitTracer(ctx, config.OpenTelemetryConfig.OtelCollectorUrl, ServiceName, "0.1.0", os.Getenv("ENV"))
 
 	if err != nil {
 		log.Printf("Failed to init otel tracer:%v", err)
