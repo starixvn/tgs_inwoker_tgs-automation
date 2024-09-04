@@ -21,6 +21,13 @@ spec:
       containers:
       - name: jaeger-collector
         image: jaegertracing/jaeger-collector:1.42.0
+        env:
+        - name: COLLECTOR_OTLP_ENABLED
+          value: true
+        - name: SPAN_STORAGE_TYPE
+          value: elasticsearch
+        - name: ES_SERVER_URLS
+          value: http://elasticsearch-es-default.eck:9200
         ports:
         - containerPort: 14250
           name: grpc
@@ -40,10 +47,6 @@ spec:
         volumeMounts:
         - name: config-volume
           mountPath: /etc/jaeger
-        command:
-        - "/jaeger-collector"
-        args:
-        - "--config.file=/etc/jaeger/jaeger-config.yml"
       volumes:
       - name: config-volume
         configMap:
