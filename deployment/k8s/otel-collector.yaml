@@ -27,10 +27,10 @@ spec:
               memory: 50Mi
           ports:
             - containerPort: 13133
-              hostPort: 13133
+              hostPort: 13134
               protocol: TCP
             - containerPort: 4318
-              hostPort: 4318
+              hostPort: 4319
               protocol: TCP
           volumeMounts:
             - mountPath: /etc/otel/config.yaml
