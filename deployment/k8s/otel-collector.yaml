@@ -40,13 +40,13 @@ spec:
           readinessProbe:
             httpGet:
               path: /healthz
-              port: 13133
+              port: 13134
             initialDelaySeconds: 1
             periodSeconds: 3
           livenessProbe:
             httpGet:
               path: /healthz
-              port: 13133
+              port: 13134
             initialDelaySeconds: 10
             periodSeconds: 3
       terminationGracePeriodSeconds: 30
