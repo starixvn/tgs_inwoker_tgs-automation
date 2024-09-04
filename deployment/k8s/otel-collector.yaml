@@ -1,0 +1,56 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: otel-collector
+  namespace: devops
+  labels:
+    otel: collector
+  annotations:
+    configmap.reloader.stakater.com/reload: "configmap-otel-collector"
+spec:
+  selector:
+    matchLabels:
+      name: otel-collector
+  template:
+    metadata:
+      labels:
+        name: otel-collector
+    spec:
+      containers:
+        - name: otel-collector
+          image: otel/opentelemetry-collector:latest
+          resources:
+            limits:
+              memory: 200Mi
+            requests:
+              cpu: 100m
+              memory: 50Mi
+          ports:
+            - containerPort: 13133
+              hostPort: 13133
+              protocol: TCP
+            - containerPort: 4318
+              hostPort: 4318
+              protocol: TCP
+          volumeMounts:
+            - mountPath: /etc/otel/config.yaml
+              name: config
+              readOnly: true
+              subPath: otel-config
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 13133
+            initialDelaySeconds: 1
+            periodSeconds: 3
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 13133
+            initialDelaySeconds: 10
+            periodSeconds: 3
+      terminationGracePeriodSeconds: 30
+      volumes:
+        - name: config
+          configMap:
+            name: configmap-otel-collector
