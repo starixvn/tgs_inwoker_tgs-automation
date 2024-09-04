@@ -42,10 +42,12 @@ func TokenHandler(c *gin.Context) {
 
 	log.Println("apikey:", apiKey)
 
-	err := godotenv.Load()
-	if err != nil {
-		fmt.Println("Error loading .env file:", err)
-		return
+	if os.Getenv("ENV") == "local" {
+		err := godotenv.Load()
+		if err != nil {
+			fmt.Println("Error loading .env file:", err)
+			return
+		}
 	}
 
 	expectedApiKey := os.Getenv("API_KEY")
