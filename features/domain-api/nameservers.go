@@ -14,7 +14,6 @@ import (
 	"tgs-automation/pkg/namecheap"
 
 	"github.com/gin-gonic/gin"
-	"github.com/joho/godotenv"
 	"github.com/miekg/dns"
 )
 
@@ -159,12 +158,6 @@ func getOriginalNameServer(domain string) (string, error) {
 }
 
 func sendTelegram(ctx context.Context, telegramApi, apikey, chatID, message string) error {
-
-	err := godotenv.Load()
-	if err != nil {
-		fmt.Println("Error loading .env file:", err)
-	}
-
 	tokenURL := fmt.Sprintf(telegramApi + "token")
 	sendURL := fmt.Sprintf(telegramApi + "send")
 
