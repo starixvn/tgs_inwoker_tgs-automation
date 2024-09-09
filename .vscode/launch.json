@@ -18,8 +18,8 @@
         "mode": "debug",
         "program": "${workspaceFolder}\\features\\domain-api",
         "env": {
-            "CONFIGPATH": "D:\\TGS\\secrets\\config.yaml"
-            
+            "CONFIGPATH": "D:\\TGS\\secrets\\config.yaml",
+            "ENV": "local"      
         }
     }
     ]
