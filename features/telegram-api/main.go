@@ -12,7 +12,6 @@ import (
 	"tgs-automation/internal/opentelemetry"
 	"tgs-automation/internal/util"
 	"tgs-automation/pkg/telegram"
-	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/iris-contrib/swagger/swaggerFiles"
@@ -29,30 +28,31 @@ const (
 
 func main() {
 	gin.SetMode(gin.ReleaseMode)
-	router := gin.Default()
-
 	config := util.GetConfig()
+	serviceName := os.Getenv("SERVICE_NAME")
 	fmt.Println("config.OtelCollectorUrl:", config.OpenTelemetryConfig.OtelCollectorUrl)
+	ctx := context.Background()
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	cleanup, err := opentelemetry.InitTracer(ctx, config.OpenTelemetryConfig.OtelCollectorUrl, ServiceName, "0.1.0", os.Getenv("ENV"))
+	{
+		tp, err := opentelemetry.InitTracerProvider(ctx, config.OpenTelemetryConfig.OtelCollectorUrl, serviceName, "0.1.0", os.Getenv("ENV"))
 
-	if err != nil {
-		log.Printf("Failed to init otel tracer:%v", err)
-		return
-	}
-	defer func() {
-		cancel()
-		if err := cleanup(ctx); err != nil {
-			log.Printf("Failed to clueanup otel tracer: %v", err)
+		if err != nil {
+			log.Printf("Failed to init otel tracer:%v", err)
+			return
 		}
-	}()
+		defer tp.Shutdown(ctx)
 
-	router.Use(otelgin.Middleware(ServiceName))
-
-	if err != nil {
-		fmt.Println("cannot get nats svc.")
+		mp, err := opentelemetry.InitMetricProvider(ctx, config.OpenTelemetryConfig.OtelCollectorUrl, serviceName)
+		if err != nil {
+			log.Printf("Failed to init otel meter: %v", err)
+			return
+		}
+		defer mp.Shutdown(ctx)
 	}
+
+	router := gin.Default()
+	router.Use(otelgin.Middleware(ServiceName))
+	router.Use(middleware.MetricsMiddleware())
 	server := &http.Server{
 		Addr:    ":8081",
 		Handler: router,
@@ -64,7 +64,7 @@ func main() {
 	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 	router.GET("/token", jwttoken.TokenHandler)
 	router.POST("/send", middleware.AuthMiddleware(), TelegramMessageHandler())
-	err = server.ListenAndServe()
+	err := server.ListenAndServe()
 
 	if err != nil {
 		fmt.Println("Failed to start server:", err)

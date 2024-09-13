@@ -13,7 +13,6 @@ import (
 	"tgs-automation/internal/util"
 	"tgs-automation/pkg/cloudflare"
 	"tgs-automation/pkg/namecheap"
-	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/iris-contrib/swagger/swaggerFiles"
@@ -23,25 +22,32 @@ import (
 
 func main() {
 	gin.SetMode(gin.ReleaseMode)
-	router := gin.Default()
+
 	config := util.GetConfig()
+	serviceName := os.Getenv("SERVICE_NAME")
 	fmt.Println("config.OtelCollectorUrl:", config.OpenTelemetryConfig.OtelCollectorUrl)
+	ctx := context.Background()
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	cleanup, err := opentelemetry.InitTracer(ctx, config.OpenTelemetryConfig.OtelCollectorUrl, "domain-api", "0.1.0", os.Getenv("ENV"))
+	{
+		tp, err := opentelemetry.InitTracerProvider(ctx, config.OpenTelemetryConfig.OtelCollectorUrl, serviceName, "0.1.0", os.Getenv("ENV"))
 
-	if err != nil {
-		log.Printf("Failed to init otel tracer:%v", err)
-		return
-	}
-	defer func() {
-		cancel()
-		if err := cleanup(ctx); err != nil {
-			log.Printf("Failed to clueanup otel tracer: %v", err)
+		if err != nil {
+			log.Printf("Failed to init otel tracer:%v", err)
+			return
 		}
-	}()
+		defer tp.Shutdown(ctx)
 
-	router.Use(otelgin.Middleware("domain-api"))
+		mp, err := opentelemetry.InitMetricProvider(ctx, config.OpenTelemetryConfig.OtelCollectorUrl, serviceName)
+		if err != nil {
+			log.Printf("Failed to init otel meter: %v", err)
+			return
+		}
+		defer mp.Shutdown(ctx)
+	}
+
+	router := gin.Default()
+	router.Use(otelgin.Middleware(serviceName))
+	router.Use(middleware.MetricsMiddleware())
 	natsSvc, err := util.NewNatsPublisher(config.NatsUrl)
 
 	defer func() {
