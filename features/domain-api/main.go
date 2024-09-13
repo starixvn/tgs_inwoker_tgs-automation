@@ -22,7 +22,6 @@ import (
 
 func main() {
 	gin.SetMode(gin.ReleaseMode)
-
 	config := util.GetConfig()
 	serviceName := os.Getenv("SERVICE_NAME")
 	fmt.Println("config.OtelCollectorUrl:", config.OpenTelemetryConfig.OtelCollectorUrl)

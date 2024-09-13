@@ -94,7 +94,6 @@ type SendTelegramRequest struct {
 // @Router /send [post]
 func TelegramMessageHandler() gin.HandlerFunc {
 	return func(c *gin.Context) {
-
 		span := trace.SpanFromContext(c.Request.Context())
 		defer span.End() // 确保在函数结束时结束 span
 
