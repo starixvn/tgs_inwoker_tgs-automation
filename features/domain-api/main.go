@@ -28,6 +28,7 @@ func main() {
 	fmt.Println("config.OtelCollectorUrl:", config.OpenTelemetryConfig.OtelCollectorUrl)
 	ctx := context.Background()
 
+	// #region Start OpenTelemetry
 	tp, err := opentelemetry.InitialTracerProvider(ctx, config.OpenTelemetryConfig.OtelCollectorUrl, serviceName, "0.1.0", os.Getenv("ENV"))
 
 	if err != nil {
@@ -42,6 +43,7 @@ func main() {
 		return
 	}
 	defer mp.Shutdown(ctx)
+	// #endregion End OpenTelemetry
 
 	router := gin.Default()
 	router.GET("/metrics", gin.WrapH(promhttp.Handler()))
