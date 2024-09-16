@@ -16,6 +16,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/iris-contrib/swagger/swaggerFiles"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	ginSwagger "github.com/swaggo/gin-swagger"
 	"go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin"
 )
@@ -36,17 +37,20 @@ func main() {
 		}
 		defer tp.Shutdown(ctx)
 
-		mp, err := opentelemetry.InitMetricProvider(ctx, config.OpenTelemetryConfig.OtelCollectorUrl, serviceName)
-		if err != nil {
-			log.Printf("Failed to init otel meter: %v", err)
-			return
-		}
-		defer mp.Shutdown(ctx)
+		opentelemetry.InitPrometheusExporter()
+		// mp, err := opentelemetry.InitMetricProvider(ctx, config.OpenTelemetryConfig.OtelCollectorUrl, serviceName)
+		// if err != nil {
+		// 	log.Printf("Failed to init otel meter: %v", err)
+		// 	return
+		// }
+		// defer mp.Shutdown(ctx)
 	}
 
 	router := gin.Default()
+	router.GET("/metrics", gin.WrapH(promhttp.Handler()))
 	router.Use(otelgin.Middleware(serviceName))
 	router.Use(middleware.MetricsMiddleware())
+
 	natsSvc, err := util.NewNatsPublisher(config.NatsUrl)
 
 	defer func() {

@@ -50,14 +50,15 @@ func MetricsMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		startTime := time.Now()
 		c.Next()
-		ginMetricHandle(c, startTime)
+		handleMetrics(c, startTime)
 	}
 }
 
-func ginMetricHandle(ctx *gin.Context, start time.Time) {
+func handleMetrics(ctx *gin.Context, start time.Time) {
 	r := ctx.Request
 	w := ctx.Writer
 	c := ctx.Request.Context()
+
 	attributes := metric.WithAttributes(
 		attribute.String("uri", ctx.FullPath()),
 		attribute.String("method", r.Method),
@@ -65,6 +66,7 @@ func ginMetricHandle(ctx *gin.Context, start time.Time) {
 	)
 
 	requestTotal.Add(c, 1)
+	uriRequestTotal.Add(c, 1, attributes)
 
 	//請求 IP 數
 	if ip := ctx.ClientIP(); !bloomFilter.Contains(ip) {
@@ -72,11 +74,13 @@ func ginMetricHandle(ctx *gin.Context, start time.Time) {
 		requestUVTotal.Add(c, 1)
 	}
 
-	//請求URI數
-	uriRequestTotal.Add(c, 1, attributes)
-
 	if r.ContentLength >= 0 {
 		requestBodySize.Add(c, float64(r.ContentLength))
+	}
+
+	// set response size
+	if w.Size() > 0 {
+		responseBodySize.Add(c, float64(w.Size()))
 	}
 
 	// set slow request
@@ -87,9 +91,4 @@ func ginMetricHandle(ctx *gin.Context, start time.Time) {
 
 	// set request duration
 	requestDuration.Record(c, latency.Seconds())
-
-	// set response size
-	if w.Size() > 0 {
-		responseBodySize.Add(c, float64(w.Size()))
-	}
 }
