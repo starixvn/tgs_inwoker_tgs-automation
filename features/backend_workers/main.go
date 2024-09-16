@@ -29,7 +29,7 @@ func main() {
 
 	// Initialize OpenTelemetry tracer
 	ctx, _ := context.WithTimeout(context.Background(), 10*time.Second)
-	tp, err := opentelemetry.InitTracerProvider(ctx, config.OpenTelemetryConfig.OtelCollectorUrl, "domain-api", "0.1.0", "prod")
+	tp, err := opentelemetry.InitialTracerProvider(ctx, config.OpenTelemetryConfig.OtelCollectorUrl, "domain-api", "0.1.0", "prod")
 
 	if err != nil {
 		log.Printf("Failed to init otel tracer:%v", err)
