@@ -63,7 +63,7 @@ func main() {
 			panic(err)
 		}
 	}()
-
+	select {}
 }
 
 func healthCheckHandler(c *gin.Context) {
