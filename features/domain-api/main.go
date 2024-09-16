@@ -54,6 +54,7 @@ func main() {
 		Addr:    ":8080",
 		Handler: router,
 	}
+	
 	go func() {
 		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			fmt.Println("Failed to start server:", err)
