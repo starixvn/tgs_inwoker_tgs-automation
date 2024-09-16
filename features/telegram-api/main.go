@@ -37,20 +37,17 @@ func main() {
 		Addr:    ":8081",
 		Handler: router,
 	}
-
 	router.ForwardedByClientIP = true
 	router.SetTrustedProxies([]string{"127.0.0.1", "10.139.0.0/16"})
 	router.GET("/healthz", healthCheckHandler)
 	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 	router.GET("/token", jwttoken.TokenHandler)
 	router.POST("/send", middleware.AuthMiddleware(), TelegramMessageHandler())
-
 	go func() {
 		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			panic(err)
 		}
 	}()
-
 	select {}
 }
 
