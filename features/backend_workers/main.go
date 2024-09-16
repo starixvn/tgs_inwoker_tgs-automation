@@ -30,7 +30,7 @@ func main() {
 	// Initialize OpenTelemetry tracer
 	ctx, _ := context.WithTimeout(context.Background(), 10*time.Second)
 
-	tp, mp := opentelemetry.InitialOpenTelemetry(ctx, config)
+	tp, mp := opentelemetry.InitialOpenTelemetry(ctx, config, ":8889")
 	defer func() {
 		tp.Shutdown(ctx)
 		mp.Shutdown(ctx)

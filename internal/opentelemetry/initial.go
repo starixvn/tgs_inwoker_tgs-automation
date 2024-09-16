@@ -23,9 +23,8 @@ import (
 	semconv "go.opentelemetry.io/otel/semconv/v1.9.0"
 )
 
-func InitialOpenTelemetry(ctx context.Context, config util.TgsConfig) (*sdktrace.TracerProvider, *sdkmetric.MeterProvider) {
+func InitialOpenTelemetry(ctx context.Context, config util.TgsConfig, port string) (*sdktrace.TracerProvider, *sdkmetric.MeterProvider) {
 	serviceName := os.Getenv("SERVICE_NAME")
-	// #region Start OpenTelemetry
 	tp, err := initialTracerProvider(ctx, config.OpenTelemetryConfig.OtelCollectorUrl, serviceName, "0.1.0", os.Getenv("ENV"))
 
 	if err != nil {
@@ -38,7 +37,6 @@ func InitialOpenTelemetry(ctx context.Context, config util.TgsConfig) (*sdktrace
 		log.Printf("Failed to init otel meter: %v", err)
 		return nil, nil
 	}
-	// #endregion End OpenTelemetry
 
 	routerOtel := gin.Default()
 	routerOtel.GET("/metrics", gin.WrapH(promhttp.Handler()))
@@ -46,12 +44,13 @@ func InitialOpenTelemetry(ctx context.Context, config util.TgsConfig) (*sdktrace
 	routerOtel.Use(middleware.MetricsMiddleware(mp))
 
 	server := &http.Server{
-		Addr:    ":8889",
+		Addr:    port,
 		Handler: routerOtel,
 	}
 
 	go func() {
-		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		if err := server.ListenAndServe(); err != nil{
+			log.Println("Err", err)
 			panic(err)
 		}
 	}()

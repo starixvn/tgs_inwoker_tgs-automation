@@ -26,8 +26,8 @@ func main() {
 	fmt.Println("config.OtelCollectorUrl:", config.OpenTelemetryConfig.OtelCollectorUrl)
 	ctx := context.Background()
 
-	tp, mp := opentelemetry.InitialOpenTelemetry(ctx, config)
-	
+	tp, mp := opentelemetry.InitialOpenTelemetry(ctx, config, ":8889")
+
 	defer func() {
 		tp.Shutdown(ctx)
 		mp.Shutdown(ctx)
