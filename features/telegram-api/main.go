@@ -27,6 +27,7 @@ func main() {
 	ctx := context.Background()
 
 	tp, mp := opentelemetry.InitialOpenTelemetry(ctx, config)
+	
 	defer func() {
 		tp.Shutdown(ctx)
 		mp.Shutdown(ctx)
