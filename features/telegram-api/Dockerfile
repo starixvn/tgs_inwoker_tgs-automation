@@ -11,4 +11,5 @@ WORKDIR /root/
 COPY --from=builder /app/main .
 COPY  ./features/telegram-api/deployment ./deployment
 EXPOSE 8081
+EXPOSE 8889
 CMD ["./main"]

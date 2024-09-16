@@ -11,4 +11,5 @@ WORKDIR /root/
 COPY --from=builder /app/main .
 COPY  ./features/domain-api/deployment ./deployment
 EXPOSE 8080
+EXPOSE 8889
 CMD ["./main"]
