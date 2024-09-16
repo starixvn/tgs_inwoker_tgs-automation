@@ -38,7 +38,7 @@ func main() {
 	}
 
 	namecheapSvc := namecheap.New(config)
-	cloudflareSvc := cloudflare.NewClloudflare(config)
+	cloudflareSvc := cloudflare.NewCloudflare(config)
 	router := gin.Default()
 	router.ForwardedByClientIP = true
 	router.SetTrustedProxies([]string{"127.0.0.1", "10.139.0.0/16"})

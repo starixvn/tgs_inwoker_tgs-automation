@@ -98,5 +98,5 @@ func handleMetrics(ctx *gin.Context, start time.Time) {
 
 	// set request duration
 	requestDuration.Record(c, latency.Seconds())
-	log.LogInfo(fmt.Sprintf("latency.Seconds: %f", latency.Seconds()))
+	log.LogInfo(fmt.Sprintln("latency.Seconds: %f", latency.Seconds()))
 }

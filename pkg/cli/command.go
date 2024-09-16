@@ -46,7 +46,7 @@ func (c *CdnCommand) CreateDomain() {
 	create_certificate.CreateCertificateByDomain(c.DomainName)
 
 	config := util.GetConfig()
-	cloudflareSvc := cloudflare.NewClloudflare(config)
+	cloudflareSvc := cloudflare.NewCloudflare(config)
 	cloudflareSvc.CreateDNS(c.DomainName)
 }
 

@@ -15,7 +15,7 @@ type CloudflareService struct {
 	Config util.TgsConfig
 }
 
-func NewClloudflare(config util.TgsConfig) CloudflareApi {
+func NewCloudflare(config util.TgsConfig) CloudflareApi {
 	return &CloudflareService{
 		Config: config,
 	}
