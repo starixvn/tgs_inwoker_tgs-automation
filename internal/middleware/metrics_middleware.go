@@ -62,6 +62,7 @@ func MetricsMiddleware(mp *sdkmetric.MeterProvider) gin.HandlerFunc {
 }
 
 func handleMetrics(ctx *gin.Context, start time.Time) {
+	log.LogInfo("start handleMetrics")
 	r := ctx.Request
 	w := ctx.Writer
 	c := ctx.Request.Context()
@@ -98,5 +99,5 @@ func handleMetrics(ctx *gin.Context, start time.Time) {
 
 	// set request duration
 	requestDuration.Record(c, latency.Seconds())
-	log.LogInfo(fmt.Sprintln("latency.Seconds: %f", latency.Seconds()))
+	log.LogInfo("end handleMetrics")
 }
