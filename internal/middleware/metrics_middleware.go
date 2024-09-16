@@ -53,6 +53,7 @@ func initial(mp *sdkmetric.MeterProvider) {
 func MetricsMiddleware(mp *sdkmetric.MeterProvider) gin.HandlerFunc {
 	initial(mp)
 	return func(c *gin.Context) {
+		fmt.Println("Middleware handler executing")
 		startTime := time.Now()
 		c.Next()
 		handleMetrics(c, startTime)
