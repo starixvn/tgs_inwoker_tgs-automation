@@ -22,7 +22,11 @@ func main() {
 	config := util.GetConfig()
 	ctx := context.Background()
 
-	opentelemetry.InitialOpenTelemetry(ctx, config)
+	tp, mp := opentelemetry.InitialOpenTelemetry(ctx, config)
+	defer func() {
+		tp.Shutdown(ctx)
+		mp.Shutdown(ctx)
+	}()
 
 	natsSvc, err := util.NewNatsPublisher(config.NatsUrl)
 

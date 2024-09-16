@@ -30,8 +30,11 @@ func main() {
 	fmt.Println("config.OtelCollectorUrl:", config.OpenTelemetryConfig.OtelCollectorUrl)
 	ctx := context.Background()
 
-	// #region OpenTelegram
-	opentelemetry.InitialOpenTelemetry(ctx, config)
+	tp, mp := opentelemetry.InitialOpenTelemetry(ctx, config)
+	defer func() {
+		tp.Shutdown(ctx)
+		mp.Shutdown(ctx)
+	}()
 
 	router := gin.Default()
 	server := &http.Server{

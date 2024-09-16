@@ -29,8 +29,12 @@ func main() {
 
 	// Initialize OpenTelemetry tracer
 	ctx, _ := context.WithTimeout(context.Background(), 10*time.Second)
-	opentelemetry.InitialOpenTelemetry(ctx, config)
 
+	tp, mp := opentelemetry.InitialOpenTelemetry(ctx, config)
+	defer func() {
+		tp.Shutdown(ctx)
+		mp.Shutdown(ctx)
+	}()
 	// Initialize Telegram bot
 	bot, err := initTelegramBot(config.Telegram.TelegramBotToken)
 	if err != nil {

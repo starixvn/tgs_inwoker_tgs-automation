@@ -24,23 +24,21 @@ import (
 	semconv "go.opentelemetry.io/otel/semconv/v1.9.0"
 )
 
-func InitialOpenTelemetry(ctx context.Context, config util.TgsConfig) {
+func InitialOpenTelemetry(ctx context.Context, config util.TgsConfig) (*sdktrace.TracerProvider, *sdkmetric.MeterProvider) {
 	serviceName := os.Getenv("SERVICE_NAME")
 	// #region Start OpenTelemetry
 	tp, err := initialTracerProvider(ctx, config.OpenTelemetryConfig.OtelCollectorUrl, serviceName, "0.1.0", os.Getenv("ENV"))
 
 	if err != nil {
 		log.Printf("Failed to init otel tracer:%v", err)
-		return
+		return nil, nil
 	}
-	defer tp.Shutdown(ctx)
 
 	mp, err := initialPrometheusExporter()
 	if err != nil {
 		log.Printf("Failed to init otel meter: %v", err)
-		return
+		return nil, nil
 	}
-	defer mp.Shutdown(ctx)
 	// #endregion End OpenTelemetry
 
 	routerOtel := gin.Default()
@@ -58,6 +56,8 @@ func InitialOpenTelemetry(ctx context.Context, config util.TgsConfig) {
 	if err != nil {
 		fmt.Println("Failed to start otel server:", err)
 	}
+
+	return tp, mp
 }
 
 func initialTracerProvider(ctx context.Context, collectorUrl, service, version, environment string) (*sdktrace.TracerProvider, error) {
