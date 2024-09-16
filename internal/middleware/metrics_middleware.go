@@ -5,6 +5,7 @@ import (
 	"os"
 	"sync"
 	"tgs-automation/internal/helper"
+	"tgs-automation/internal/log"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -46,6 +47,7 @@ func initial(mp *sdkmetric.MeterProvider) {
 		)
 
 		slowRequest, _ = meter.Int64Counter("gin_slow_request_total", metric.WithDescription(fmt.Sprintf("the server handled slow requests counter, t=%d.", defaultSlowTime)))
+		log.LogInfo("go into initial")
 	})
 }
 
@@ -96,4 +98,5 @@ func handleMetrics(ctx *gin.Context, start time.Time) {
 
 	// set request duration
 	requestDuration.Record(c, latency.Seconds())
+	log.LogInfo(fmt.Sprintf("latency.Seconds: %f", latency.Seconds()))
 }
