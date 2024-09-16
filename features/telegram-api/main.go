@@ -15,6 +15,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/iris-contrib/swagger/swaggerFiles"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	ginSwagger "github.com/swaggo/gin-swagger"
 	"go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin"
 	"go.opentelemetry.io/otel/attribute"
@@ -33,26 +34,25 @@ func main() {
 	fmt.Println("config.OtelCollectorUrl:", config.OpenTelemetryConfig.OtelCollectorUrl)
 	ctx := context.Background()
 
-	{
-		tp, err := opentelemetry.InitTracerProvider(ctx, config.OpenTelemetryConfig.OtelCollectorUrl, serviceName, "0.1.0", os.Getenv("ENV"))
+	tp, err := opentelemetry.InitialTracerProvider(ctx, config.OpenTelemetryConfig.OtelCollectorUrl, serviceName, "0.1.0", os.Getenv("ENV"))
 
-		if err != nil {
-			log.Printf("Failed to init otel tracer:%v", err)
-			return
-		}
-		defer tp.Shutdown(ctx)
-
-		mp, err := opentelemetry.InitMetricProvider(ctx, config.OpenTelemetryConfig.OtelCollectorUrl, serviceName)
-		if err != nil {
-			log.Printf("Failed to init otel meter: %v", err)
-			return
-		}
-		defer mp.Shutdown(ctx)
+	if err != nil {
+		log.Printf("Failed to init otel tracer:%v", err)
+		return
 	}
+	defer tp.Shutdown(ctx)
+
+	mp, err := opentelemetry.InitialPrometheusExporter()
+	if err != nil {
+		log.Printf("Failed to init otel meter: %v", err)
+		return
+	}
+	defer mp.Shutdown(ctx)
 
 	router := gin.Default()
+	router.GET("/metrics", gin.WrapH(promhttp.Handler()))
 	router.Use(otelgin.Middleware(ServiceName))
-	router.Use(middleware.MetricsMiddleware())
+	router.Use(middleware.MetricsMiddleware(mp))
 	server := &http.Server{
 		Addr:    ":8081",
 		Handler: router,
@@ -64,7 +64,7 @@ func main() {
 	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 	router.GET("/token", jwttoken.TokenHandler)
 	router.POST("/send", middleware.AuthMiddleware(), TelegramMessageHandler())
-	err := server.ListenAndServe()
+	err = server.ListenAndServe()
 
 	if err != nil {
 		fmt.Println("Failed to start server:", err)

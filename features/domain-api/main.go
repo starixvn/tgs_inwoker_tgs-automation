@@ -28,28 +28,25 @@ func main() {
 	fmt.Println("config.OtelCollectorUrl:", config.OpenTelemetryConfig.OtelCollectorUrl)
 	ctx := context.Background()
 
-	{
-		tp, err := opentelemetry.InitTracerProvider(ctx, config.OpenTelemetryConfig.OtelCollectorUrl, serviceName, "0.1.0", os.Getenv("ENV"))
+	tp, err := opentelemetry.InitialTracerProvider(ctx, config.OpenTelemetryConfig.OtelCollectorUrl, serviceName, "0.1.0", os.Getenv("ENV"))
 
-		if err != nil {
-			log.Printf("Failed to init otel tracer:%v", err)
-			return
-		}
-		defer tp.Shutdown(ctx)
-
-		opentelemetry.InitPrometheusExporter()
-		// mp, err := opentelemetry.InitMetricProvider(ctx, config.OpenTelemetryConfig.OtelCollectorUrl, serviceName)
-		// if err != nil {
-		// 	log.Printf("Failed to init otel meter: %v", err)
-		// 	return
-		// }
-		// defer mp.Shutdown(ctx)
+	if err != nil {
+		log.Printf("Failed to init otel tracer:%v", err)
+		return
 	}
+	defer tp.Shutdown(ctx)
+
+	mp, err := opentelemetry.InitialPrometheusExporter()
+	if err != nil {
+		log.Printf("Failed to init otel meter: %v", err)
+		return
+	}
+	defer mp.Shutdown(ctx)
 
 	router := gin.Default()
 	router.GET("/metrics", gin.WrapH(promhttp.Handler()))
 	router.Use(otelgin.Middleware(serviceName))
-	router.Use(middleware.MetricsMiddleware())
+	router.Use(middleware.MetricsMiddleware(mp))
 
 	natsSvc, err := util.NewNatsPublisher(config.NatsUrl)
 

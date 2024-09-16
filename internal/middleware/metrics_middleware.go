@@ -7,13 +7,12 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
+	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 )
 
 var (
-	meter            = otel.Meter(os.Getenv("SERVICE_NAME"))
 	requestTotal     metric.Int64Counter
 	requestUVTotal   metric.Int64Counter
 	uriRequestTotal  metric.Int64Counter
@@ -27,7 +26,8 @@ var (
 	bloomFilter     *helper.BloomFilter
 )
 
-func init() {
+func initial(mp *sdkmetric.MeterProvider) {
+	meter := mp.Meter(os.Getenv("SERVICE_NAME"))
 	bloomFilter = helper.NewBloomFilter()
 	requestTotal, _ = meter.Int64Counter("gin_request_total", metric.WithDescription("all the server received request total."))
 	requestUVTotal, _ = meter.Int64Counter("gin_request_uv_total", metric.WithDescription("all the server received ip number."))
@@ -46,7 +46,8 @@ func init() {
 }
 
 // authMiddleware validates the JWT token
-func MetricsMiddleware() gin.HandlerFunc {
+func MetricsMiddleware(mp *sdkmetric.MeterProvider) gin.HandlerFunc {
+	initial(mp)
 	return func(c *gin.Context) {
 		startTime := time.Now()
 		c.Next()
