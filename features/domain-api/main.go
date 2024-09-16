@@ -3,9 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
-	"log"
 	"net/http"
-	"os"
 	_ "tgs-automation/features/domain-api/docs"
 	jwttoken "tgs-automation/internal/jwt_token"
 	middleware "tgs-automation/internal/middleware"
@@ -16,39 +14,15 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/iris-contrib/swagger/swaggerFiles"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
 	ginSwagger "github.com/swaggo/gin-swagger"
-	"go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin"
 )
 
 func main() {
 	gin.SetMode(gin.ReleaseMode)
 	config := util.GetConfig()
-	serviceName := os.Getenv("SERVICE_NAME")
-	fmt.Println("config.OtelCollectorUrl:", config.OpenTelemetryConfig.OtelCollectorUrl)
 	ctx := context.Background()
 
-	// #region Start OpenTelemetry
-	tp, err := opentelemetry.InitialTracerProvider(ctx, config.OpenTelemetryConfig.OtelCollectorUrl, serviceName, "0.1.0", os.Getenv("ENV"))
-
-	if err != nil {
-		log.Printf("Failed to init otel tracer:%v", err)
-		return
-	}
-	defer tp.Shutdown(ctx)
-
-	mp, err := opentelemetry.InitialPrometheusExporter()
-	if err != nil {
-		log.Printf("Failed to init otel meter: %v", err)
-		return
-	}
-	defer mp.Shutdown(ctx)
-	// #endregion End OpenTelemetry
-
-	router := gin.Default()
-	router.GET("/metrics", gin.WrapH(promhttp.Handler()))
-	router.Use(otelgin.Middleware(serviceName))
-	router.Use(middleware.MetricsMiddleware(mp))
+	opentelemetry.InitialOpenTelemetry(ctx, config)
 
 	natsSvc, err := util.NewNatsPublisher(config.NatsUrl)
 
@@ -63,11 +37,7 @@ func main() {
 	namecheapSvc := namecheap.New(config)
 	cloudflareSvc := cloudflare.NewClloudflare(config)
 
-	server := &http.Server{
-		Addr:    ":8080",
-		Handler: router,
-	}
-
+	router := gin.Default()
 	router.ForwardedByClientIP = true
 	router.SetTrustedProxies([]string{"127.0.0.1", "10.139.0.0/16"})
 	router.GET("/healthz", healthCheckHandler)
@@ -77,6 +47,12 @@ func main() {
 	router.PUT("/nameserver", middleware.AuthMiddleware(), UpdateNameServerHandler(config, namecheapSvc, natsSvc))
 	router.GET("/domain/price", middleware.AuthMiddleware(), GetDomainPriceHandler(config, namecheapSvc, natsSvc))
 	router.POST("/domain", middleware.AuthMiddleware(), CreateDomainHandler(config, namecheapSvc, natsSvc))
+
+	server := &http.Server{
+		Addr:    ":8080",
+		Handler: router,
+	}
+
 	err = server.ListenAndServe()
 
 	if err != nil {

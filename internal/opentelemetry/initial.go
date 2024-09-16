@@ -2,9 +2,16 @@ package opentelemetry
 
 import (
 	"context"
+	"fmt"
 	"log"
+	"net/http"
 	"os"
+	"tgs-automation/internal/middleware"
+	"tgs-automation/internal/util"
 
+	"github.com/gin-gonic/gin"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
@@ -17,7 +24,43 @@ import (
 	semconv "go.opentelemetry.io/otel/semconv/v1.9.0"
 )
 
-func InitialTracerProvider(ctx context.Context, collectorUrl, service, version, environment string) (*sdktrace.TracerProvider, error) {
+func InitialOpenTelemetry(ctx context.Context, config util.TgsConfig) {
+	serviceName := os.Getenv("SERVICE_NAME")
+	// #region Start OpenTelemetry
+	tp, err := initialTracerProvider(ctx, config.OpenTelemetryConfig.OtelCollectorUrl, serviceName, "0.1.0", os.Getenv("ENV"))
+
+	if err != nil {
+		log.Printf("Failed to init otel tracer:%v", err)
+		return
+	}
+	defer tp.Shutdown(ctx)
+
+	mp, err := initialPrometheusExporter()
+	if err != nil {
+		log.Printf("Failed to init otel meter: %v", err)
+		return
+	}
+	defer mp.Shutdown(ctx)
+	// #endregion End OpenTelemetry
+
+	routerOtel := gin.Default()
+	routerOtel.GET("/metrics", gin.WrapH(promhttp.Handler()))
+	routerOtel.Use(otelgin.Middleware(serviceName))
+	routerOtel.Use(middleware.MetricsMiddleware(mp))
+
+	server := &http.Server{
+		Addr:    ":8889",
+		Handler: routerOtel,
+	}
+
+	err = server.ListenAndServe()
+
+	if err != nil {
+		fmt.Println("Failed to start otel server:", err)
+	}
+}
+
+func initialTracerProvider(ctx context.Context, collectorUrl, service, version, environment string) (*sdktrace.TracerProvider, error) {
 	exporter, err := otlptracehttp.New(ctx,
 		otlptracehttp.WithEndpoint(collectorUrl),
 		otlptracehttp.WithInsecure(),
@@ -55,7 +98,7 @@ func getResource(
 }
 
 // 初始化 Prometheus 导出器
-func InitialPrometheusExporter() (*sdkmetric.MeterProvider, error) {
+func initialPrometheusExporter() (*sdkmetric.MeterProvider, error) {
 	exporter, err := prometheus.New()
 	if err != nil {
 		log.Fatalf("无法创建 Prometheus 导出器：%v", err)
