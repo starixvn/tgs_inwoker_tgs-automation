@@ -22,7 +22,7 @@ func main() {
 	config := util.GetConfig()
 	ctx := context.Background()
 
-	tp, mp := opentelemetry.InitialOpenTelemetry(ctx, config, "8889")
+	tp, mp := opentelemetry.InitialOpenTelemetry(ctx, config, ":8889")
 	defer func() {
 		tp.Shutdown(ctx)
 		mp.Shutdown(ctx)
