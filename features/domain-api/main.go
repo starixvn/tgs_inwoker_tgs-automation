@@ -57,11 +57,13 @@ func main() {
 		Handler: router,
 	}
 
-	err = server.ListenAndServe()
+	go func() {
+		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			fmt.Println("Failed to start server:", err)
+			panic(err)
+		}
+	}()
 
-	if err != nil {
-		fmt.Println("Failed to start server:", err)
-	}
 }
 
 func healthCheckHandler(c *gin.Context) {

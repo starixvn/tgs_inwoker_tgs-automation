@@ -2,7 +2,6 @@ package opentelemetry
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -51,11 +50,11 @@ func InitialOpenTelemetry(ctx context.Context, config util.TgsConfig) (*sdktrace
 		Handler: routerOtel,
 	}
 
-	err = server.ListenAndServe()
-
-	if err != nil {
-		fmt.Println("Failed to start otel server:", err)
-	}
+	go func() {
+		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			panic(err)
+		}
+	}()
 
 	return tp, mp
 }
