@@ -3,6 +3,7 @@ package middleware
 import (
 	"fmt"
 	"os"
+	"sync"
 	"tgs-automation/internal/helper"
 	"time"
 
@@ -13,6 +14,7 @@ import (
 )
 
 var (
+	initOnce         sync.Once
 	requestTotal     metric.Int64Counter
 	requestUVTotal   metric.Int64Counter
 	uriRequestTotal  metric.Int64Counter
@@ -27,22 +29,24 @@ var (
 )
 
 func initial(mp *sdkmetric.MeterProvider) {
-	meter := mp.Meter(os.Getenv("SERVICE_NAME"))
-	bloomFilter = helper.NewBloomFilter()
-	requestTotal, _ = meter.Int64Counter("gin_request_total", metric.WithDescription("all the server received request total."))
-	requestUVTotal, _ = meter.Int64Counter("gin_request_uv_total", metric.WithDescription("all the server received ip number."))
-	uriRequestTotal, _ = meter.Int64Counter("gin_uri_request_total", metric.WithDescription("all the server received request number with erery uri."))
-	requestBodySize, _ = meter.Float64Counter("gin_request_body_total", metric.WithDescription("the server received request body size, unit is byte."))
-	responseBodySize, _ = meter.Float64Counter("gin_response_body_total", metric.WithDescription("the server response body size, unit is byte."))
+	initOnce.Do(func() {
+		meter := mp.Meter(os.Getenv("SERVICE_NAME"))
+		bloomFilter = helper.NewBloomFilter()
+		requestTotal, _ = meter.Int64Counter("gin_request_total", metric.WithDescription("all the server received request total."))
+		requestUVTotal, _ = meter.Int64Counter("gin_request_uv_total", metric.WithDescription("all the server received ip number."))
+		uriRequestTotal, _ = meter.Int64Counter("gin_uri_request_total", metric.WithDescription("all the server received request number with erery uri."))
+		requestBodySize, _ = meter.Float64Counter("gin_request_body_total", metric.WithDescription("the server received request body size, unit is byte."))
+		responseBodySize, _ = meter.Float64Counter("gin_response_body_total", metric.WithDescription("the server response body size, unit is byte."))
 
-	requestDuration, _ = meter.Float64Histogram(
-		"gin_request_duration",
-		metric.WithUnit("s"),
-		metric.WithDescription("the time server took to handle the request."),
-		metric.WithExplicitBucketBoundaries(defaultDuration...),
-	)
+		requestDuration, _ = meter.Float64Histogram(
+			"gin_request_duration",
+			metric.WithUnit("s"),
+			metric.WithDescription("the time server took to handle the request."),
+			metric.WithExplicitBucketBoundaries(defaultDuration...),
+		)
 
-	slowRequest, _ = meter.Int64Counter("gin_slow_request_total", metric.WithDescription(fmt.Sprintf("the server handled slow requests counter, t=%d.", defaultSlowTime)))
+		slowRequest, _ = meter.Int64Counter("gin_slow_request_total", metric.WithDescription(fmt.Sprintf("the server handled slow requests counter, t=%d.", defaultSlowTime)))
+	})
 }
 
 // authMiddleware validates the JWT token

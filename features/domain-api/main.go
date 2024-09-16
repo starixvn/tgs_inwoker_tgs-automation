@@ -29,10 +29,7 @@ func main() {
 	}()
 
 	natsSvc, err := util.NewNatsPublisher(config.NatsUrl)
-
-	defer func() {
-		natsSvc.Close()
-	}()
+	defer natsSvc.Close()
 
 	if err != nil {
 		fmt.Println("cannot get nats svc.")

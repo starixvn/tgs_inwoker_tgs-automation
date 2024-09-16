@@ -20,10 +20,6 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
-const (
-	ServiceName = "telegram-api"
-)
-
 func main() {
 	gin.SetMode(gin.ReleaseMode)
 	config := util.GetConfig()
