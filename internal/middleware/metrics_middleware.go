@@ -3,19 +3,18 @@ package middleware
 import (
 	"fmt"
 	"os"
-	"sync"
 	"tgs-automation/internal/helper"
-	"tgs-automation/internal/log"
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 )
 
 var (
-	initOnce         sync.Once
+	meter            = otel.Meter(os.Getenv("SERVICE_NAME"))
 	requestTotal     metric.Int64Counter
 	requestUVTotal   metric.Int64Counter
 	uriRequestTotal  metric.Int64Counter
@@ -30,6 +29,7 @@ var (
 )
 
 func initial(mp *sdkmetric.MeterProvider) {
+
 	meter := mp.Meter(os.Getenv("SERVICE_NAME"))
 	bloomFilter = helper.NewBloomFilter()
 	requestTotal, _ = meter.Int64Counter("gin_request_total", metric.WithDescription("all the server received request total."))
@@ -46,14 +46,12 @@ func initial(mp *sdkmetric.MeterProvider) {
 	)
 
 	slowRequest, _ = meter.Int64Counter("gin_slow_request_total", metric.WithDescription(fmt.Sprintf("the server handled slow requests counter, t=%d.", defaultSlowTime)))
-	log.LogInfo("go into initial")
 }
 
 // authMiddleware validates the JWT token
 func MetricsMiddleware(mp *sdkmetric.MeterProvider) gin.HandlerFunc {
 	initial(mp)
 	return func(c *gin.Context) {
-		fmt.Println("Middleware handler executing")
 		startTime := time.Now()
 		c.Next()
 		handleMetrics(c, startTime)
@@ -61,7 +59,6 @@ func MetricsMiddleware(mp *sdkmetric.MeterProvider) gin.HandlerFunc {
 }
 
 func handleMetrics(ctx *gin.Context, start time.Time) {
-	log.LogInfo("start handleMetrics")
 	r := ctx.Request
 	w := ctx.Writer
 	c := ctx.Request.Context()
@@ -98,5 +95,4 @@ func handleMetrics(ctx *gin.Context, start time.Time) {
 
 	// set request duration
 	requestDuration.Record(c, latency.Seconds())
-	log.LogInfo("end handleMetrics")
 }

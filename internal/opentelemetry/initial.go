@@ -5,12 +5,12 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"tgs-automation/internal/middleware"
+
 	"tgs-automation/internal/util"
 
 	"github.com/gin-gonic/gin"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin"
+
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
@@ -40,16 +40,13 @@ func InitialOpenTelemetry(ctx context.Context, config util.TgsConfig, port strin
 
 	routerOtel := gin.Default()
 	routerOtel.GET("/metrics", gin.WrapH(promhttp.Handler()))
-	routerOtel.Use(otelgin.Middleware(serviceName))
-	routerOtel.Use(middleware.MetricsMiddleware(mp))
-
 	server := &http.Server{
 		Addr:    port,
 		Handler: routerOtel,
 	}
 
 	go func() {
-		if err := server.ListenAndServe(); err != nil{
+		if err := server.ListenAndServe(); err != nil {
 			log.Println("Err", err)
 			panic(err)
 		}

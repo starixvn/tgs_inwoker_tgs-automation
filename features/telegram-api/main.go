@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 	_ "tgs-automation/features/domain-api/docs"
 	jwttoken "tgs-automation/internal/jwt_token"
 	middleware "tgs-automation/internal/middleware"
@@ -15,6 +16,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/iris-contrib/swagger/swaggerFiles"
 	ginSwagger "github.com/swaggo/gin-swagger"
+	"go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
@@ -40,6 +42,8 @@ func main() {
 	}
 	router.ForwardedByClientIP = true
 	router.SetTrustedProxies([]string{"127.0.0.1", "10.139.0.0/16"})
+	router.Use(otelgin.Middleware(os.Getenv("SERVICE_NAME")))
+	router.Use(middleware.MetricsMiddleware(mp))
 	router.GET("/healthz", healthCheckHandler)
 	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 	router.GET("/token", jwttoken.TokenHandler)
