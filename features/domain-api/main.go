@@ -30,14 +30,13 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to build container: %v", err)
 	}
-
 	err = container.Invoke(func(
 		config config.TgsConfig,
 		telemetry *opentelemetry.Telemetry,
 		tokenService jwttoken.JWTService,
 		apikeyAuth *jwttoken.APIKeyAuth,
 		telegramBot *telegram.TelegramBot,
-		cloudflareSvc *cloudflare.CloudflareService,
+		cloudflareSvc cloudflare.CloudflareApi,
 		namecheapSvc namecheap.NamecheapApi,
 		natsSvc nats.NatsPublisherService,
 		dnsResolver *dnsresolver.DNSResolver,
@@ -48,7 +47,6 @@ func main() {
 			return err
 		}
 		defer telemetry.Shutdown(ctx)
-
 		router := setupRouter(
 			config,
 			telemetry,
@@ -72,6 +70,10 @@ func main() {
 		}()
 		select {}
 	})
+
+	if err != nil {
+		log.Fatalf("Error starting the server: %v", err)
+	}
 }
 
 func setupRouter(
@@ -80,7 +82,7 @@ func setupRouter(
 	tokenService jwttoken.JWTService,
 	apikeyAuth *jwttoken.APIKeyAuth,
 	telegramBot *telegram.TelegramBot,
-	cloudflareSvc *cloudflare.CloudflareService,
+	cloudflareSvc cloudflare.CloudflareApi,
 	namecheapSvc namecheap.NamecheapApi,
 	natsSvc nats.NatsPublisherService,
 	dnsresolver *dnsresolver.DNSResolver) *gin.Engine {
