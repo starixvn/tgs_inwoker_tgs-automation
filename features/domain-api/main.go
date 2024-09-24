@@ -93,7 +93,7 @@ func setupRouter(
 	router.Use(middleware.MetricsMiddleware(telemetry.MeterProvider))
 	router.GET("/healthz", healthCheckHandler)
 	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
-	router.GET("/token", jwttoken.TokenHandler(&tokenService, apikeyAuth))
+	router.GET("/token", jwttoken.TokenHandler(tokenService, apikeyAuth))
 	router.GET("/nameserver", middleware.AuthMiddleware(), GetNameServerHandler(config, cloudflareSvc, natsSvc, telegramBot, dnsresolver))
 	router.PUT("/nameserver", middleware.AuthMiddleware(), UpdateNameServerHandler(config, namecheapSvc, natsSvc, telegramBot))
 	router.GET("/domain/price", middleware.AuthMiddleware(), GetDomainPriceHandler(config, namecheapSvc, natsSvc, telegramBot))

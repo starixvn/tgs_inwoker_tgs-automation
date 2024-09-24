@@ -29,7 +29,7 @@ func main() {
 
 	router.GET("/healthz", healthCheckHandler)
 	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
-	router.GET("/token", jwttoken.TokenHandler(tokenService, apiKeyAuth))
+	router.GET("/token", jwttoken.TokenHandler(*tokenService, apiKeyAuth))
 	router.POST("/player_adjust", middleware.AuthMiddleware(), getPlayersAdjustAmount)
 
 	err = router.Run(":8080")

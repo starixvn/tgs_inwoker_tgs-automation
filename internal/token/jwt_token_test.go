@@ -25,7 +25,7 @@ func TestTokenHandler(t *testing.T) {
 	}
 
 	// 注册路由
-	router.GET("/token", TokenHandler(jwtService, apiKeyAuth))
+	router.GET("/token", TokenHandler(*jwtService, apiKeyAuth))
 
 	// 构造请求
 	req, _ := http.NewRequest("GET", "/token", nil)
