@@ -80,10 +80,12 @@ type APIKeyAuth struct {
 }
 
 func NewAPIKeyAuth() (*APIKeyAuth, error) {
-	err := godotenv.Load()
-	if err != nil {
-		fmt.Println("Error loading .env file:", err)
-		return nil, err
+	if os.Getenv("ENV") == "" {
+		err := godotenv.Load()
+		if err != nil {
+			fmt.Println("Error loading .env file:", err)
+			return nil, err
+		}
 	}
 
 	expectedApiKey := os.Getenv("API_KEY")
