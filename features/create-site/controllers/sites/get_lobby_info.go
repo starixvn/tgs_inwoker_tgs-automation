@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"tgs-automation/internal/config"
 	"tgs-automation/internal/log"
-	"tgs-automation/internal/util"
 	"tgs-automation/pkg/postgresql"
 
 	"github.com/gin-gonic/gin"
@@ -16,7 +16,7 @@ type LobbyInfo struct {
 	DockerImage string
 }
 
-func GetLobbyInfo(request CreateSiteRequest, config util.TgsConfig) (int, map[string]any) {
+func GetLobbyInfo(request CreateSiteRequest, config config.TgsConfig) (int, map[string]any) {
 	// Fetch Docker image
 	dockerhubService := NewDockerImageService(config.Dockerhub)
 	image, err := dockerhubService.FetchDockerImage(request.LobbyTemplate)

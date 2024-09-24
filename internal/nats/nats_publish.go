@@ -1,4 +1,4 @@
-package util
+package nats
 
 import (
 	"context"

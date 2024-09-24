@@ -3,8 +3,8 @@ package postgresql
 import (
 	"database/sql"
 	"fmt"
+	"tgs-automation/internal/config"
 	"tgs-automation/internal/log"
-	"tgs-automation/internal/util"
 	"time"
 
 	_ "github.com/lib/pq"
@@ -17,10 +17,10 @@ type GetDailyBrandsRevenueInterface interface {
 
 type GetDailyBrandsRevenueService struct {
 	Db     *sql.DB
-	Config util.PostgresqlConfig
+	Config config.PostgresqlConfig
 }
 
-func NewDailyBrandsRevenueInterface(config util.PostgresqlConfig) GetDailyBrandsRevenueInterface {
+func NewDailyBrandsRevenueInterface(config config.PostgresqlConfig) GetDailyBrandsRevenueInterface {
 	db, err := NewDataAccessLayer(config)
 
 	if err != nil {

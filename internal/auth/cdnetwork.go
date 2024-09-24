@@ -1,15 +1,17 @@
 package auth
 
 import (
+	"context"
 	"crypto/hmac"
 	"crypto/sha1"
 	"encoding/base64"
 	"fmt"
 	"net/http"
+	"tgs-automation/internal/config"
 	"tgs-automation/internal/constant"
+	tgshttp "tgs-automation/internal/http"
 	"tgs-automation/internal/log"
 	"tgs-automation/internal/model"
-	"tgs-automation/internal/util"
 	"time"
 )
 
@@ -18,7 +20,7 @@ type BasicConfig struct {
 	Method string
 }
 
-func TransferRequestMsg(parameter BasicConfig, config util.CdnConfig) model.HttpRequestMsg {
+func TransferRequestMsg(parameter BasicConfig, config config.CdnConfig) model.HttpRequestMsg {
 
 	var requestMsg = model.HttpRequestMsg{Params: map[string]string{}, Headers: map[string]string{}}
 	requestMsg.Uri = parameter.Uri
@@ -35,8 +37,14 @@ func TransferRequestMsg(parameter BasicConfig, config util.CdnConfig) model.Http
 }
 
 func Invoke(url BasicConfig, jsonStr string) string {
-	config := util.GetConfig()
+	ctx := context.Background()
+	configObj := config.NewConfigManager()
+	config, err := configObj.GetConfig(ctx)
 
+	if err != nil {
+		fmt.Printf("Failed to get config: %v\n", err)
+		return ""
+	}
 	var requestMsg = TransferRequestMsg(url, config.CdnNetwork)
 
 	if url.Method == "POST" || url.Method == "PUT" || url.Method == "PATCH" || url.Method == "DELETE" {
@@ -51,7 +59,7 @@ func Invoke(url BasicConfig, jsonStr string) string {
 	requestMsg.Headers["Content-Type"] = constant.ApplicationJson
 	requestMsg.Headers[constant.Authorization] = authorization
 	requestMsg.Headers[constant.XCncAuthMethod] = constant.BASIC
-	return util.Call(requestMsg)
+	return tgshttp.Call(requestMsg)
 }
 
 func authorization(userName string, passwd string) string {

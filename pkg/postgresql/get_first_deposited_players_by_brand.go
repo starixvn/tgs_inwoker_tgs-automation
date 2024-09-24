@@ -3,8 +3,8 @@ package postgresql
 import (
 	"database/sql"
 	"fmt"
+	"tgs-automation/internal/config"
 	"tgs-automation/internal/log"
-	"tgs-automation/internal/util"
 	"time"
 
 	_ "github.com/lib/pq"
@@ -18,10 +18,10 @@ type GetMomoDataInterface interface {
 
 type GetMomoDataService struct {
 	Db     *sql.DB
-	Config util.PostgresqlConfig
+	Config config.PostgresqlConfig
 }
 
-func NewMomoDataInterface(config util.PostgresqlConfig) GetMomoDataInterface {
+func NewMomoDataInterface(config config.PostgresqlConfig) GetMomoDataInterface {
 	db, err := NewDataAccessLayer(config)
 
 	if err != nil {

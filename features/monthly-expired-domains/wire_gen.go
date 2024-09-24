@@ -7,12 +7,12 @@
 package main
 
 import (
-	"tgs-automation/internal/util"
+	"tgs-automation/internal/config"
 )
 
 // Injectors from wire.go:
 
-func InitExpiredDomainsService(cfg util.TgsConfig) (*ExpiredDomainsService, error) {
+func InitExpiredDomainsService(cfg config.TgsConfig) (*ExpiredDomainsService, error) {
 	expiredDomainsService := NewExpiredDomainsService(cfg)
 	return expiredDomainsService, nil
 }

@@ -1,7 +1,7 @@
 package postgresql
 
 import (
-	"tgs-automation/internal/util"
+	"tgs-automation/internal/config"
 
 	_ "github.com/lib/pq"
 )
@@ -9,7 +9,7 @@ import (
 // 領取紅利人數
 
 type BonusPlayerCountService struct {
-	Config util.PostgresqlConfig
+	Config config.PostgresqlConfig
 }
 
 func (bpc *BonusPlayerCountService) GetPlayerCount(brandCode, startDate, endDate string) (int, error) {

@@ -1,9 +1,11 @@
 package cloudflare
 
-import "tgs-automation/internal/util"
+import (
+	"tgs-automation/internal/config"
+)
 
-//mockgen -destination pkg/cloudflare/mock_cloudflare.go -package=cloudflare tgs-automation/pkg/Cloudflare CloudflareApi
-//go generate mockgen -destination ../mocks/mock_cloudflare.go -package=cloudflare tgs-automation/pkg/Cloudflare CloudflareApi
+// mockgen -destination pkg/cloudflare/mock_cloudflare.go -package=cloudflare tgs-automation/pkg/Cloudflare CloudflareApi
+// go generate mockgen -destination ../mocks/mock_cloudflare.go -package=cloudflare tgs-automation/pkg/Cloudflare CloudflareApi
 type CloudflareApi interface {
 	CreateDNS(domain string) error
 	DeleteDNS(domain string) error
@@ -12,10 +14,10 @@ type CloudflareApi interface {
 }
 
 type CloudflareService struct {
-	Config util.TgsConfig
+	Config config.TgsConfig
 }
 
-func NewCloudflare(config util.TgsConfig) CloudflareApi {
+func NewCloudflare(config config.TgsConfig) CloudflareApi {
 	return &CloudflareService{
 		Config: config,
 	}

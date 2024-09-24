@@ -2,7 +2,7 @@ package postgresql
 
 import (
 	"testing"
-	"tgs-automation/internal/util"
+	"tgs-automation/internal/config"
 	"tgs-automation/pkg/namecheap"
 	"time"
 
@@ -52,7 +52,7 @@ func TestGetAgentDomains(t *testing.T) {
 	// Create GetAgentService with mock database
 	service := GetAgentService{
 		Db:     db,
-		Config: util.PostgresqlConfig{},
+		Config: config.PostgresqlConfig{},
 	}
 
 	// Call the method we are testing

@@ -3,13 +3,17 @@ package main
 import (
 	"context"
 	"fmt"
+	"log"
 	"net/http"
 	"os"
 	_ "tgs-automation/features/domain-api/docs"
-	jwttoken "tgs-automation/internal/jwt_token"
+	"tgs-automation/internal/config"
+	"tgs-automation/internal/dnsresolver"
 	middleware "tgs-automation/internal/middleware"
+	"tgs-automation/internal/nats"
 	"tgs-automation/internal/opentelemetry"
-	"tgs-automation/internal/util"
+	"tgs-automation/internal/telegram"
+	jwttoken "tgs-automation/internal/token"
 	"tgs-automation/pkg/cloudflare"
 	"tgs-automation/pkg/namecheap"
 
@@ -21,50 +25,81 @@ import (
 
 func main() {
 	gin.SetMode(gin.ReleaseMode)
-	config := util.GetConfig()
 	ctx := context.Background()
-
-	tp, mp := opentelemetry.InitialOpenTelemetry(ctx, config, ":8889")
-	defer func() {
-		tp.Shutdown(ctx)
-		mp.Shutdown(ctx)
-	}()
-
-	natsSvc, err := util.NewNatsPublisher(config.NatsUrl)
-	defer func() {
-		natsSvc.Close()
-	}()
-
+	container, err := BuildContainer(ctx)
 	if err != nil {
-		fmt.Println("cannot get nats svc.")
+		log.Fatalf("Failed to build container: %v", err)
 	}
 
-	namecheapSvc := namecheap.New(config)
-	cloudflareSvc := cloudflare.NewCloudflare(config)
+	err = container.Invoke(func(
+		config config.TgsConfig,
+		telemetry *opentelemetry.Telemetry,
+		tokenService jwttoken.JWTService,
+		apikeyAuth *jwttoken.APIKeyAuth,
+		telegramBot *telegram.TelegramBot,
+		cloudflareSvc *cloudflare.CloudflareService,
+		namecheapSvc namecheap.NamecheapApi,
+		natsSvc nats.NatsPublisherService,
+		dnsResolver *dnsresolver.DNSResolver,
+	) error {
+
+		if err := telemetry.Initialize(ctx, ":8889"); err != nil {
+			fmt.Printf("Failed to initialize telemetry: %v\n", err)
+			return err
+		}
+		defer telemetry.Shutdown(ctx)
+
+		router := setupRouter(
+			config,
+			telemetry,
+			tokenService,
+			apikeyAuth,
+			telegramBot,
+			cloudflareSvc,
+			namecheapSvc,
+			natsSvc,
+			dnsResolver,
+		)
+		server := &http.Server{
+			Addr:    ":8080",
+			Handler: router,
+		}
+
+		go func() {
+			if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+				log.Fatalf("ListenAndServe(): %v", err)
+			}
+		}()
+		select {}
+	})
+}
+
+func setupRouter(
+	config config.TgsConfig,
+	telemetry *opentelemetry.Telemetry,
+	tokenService jwttoken.JWTService,
+	apikeyAuth *jwttoken.APIKeyAuth,
+	telegramBot *telegram.TelegramBot,
+	cloudflareSvc *cloudflare.CloudflareService,
+	namecheapSvc namecheap.NamecheapApi,
+	natsSvc nats.NatsPublisherService,
+	dnsresolver *dnsresolver.DNSResolver) *gin.Engine {
+
 	router := gin.Default()
 	router.ForwardedByClientIP = true
 	router.SetTrustedProxies([]string{"127.0.0.1", "10.139.0.0/16"})
+
 	router.Use(otelgin.Middleware(os.Getenv("SERVICE_NAME")))
-	router.Use(middleware.MetricsMiddleware(mp))
+	router.Use(middleware.MetricsMiddleware(telemetry.MeterProvider))
 	router.GET("/healthz", healthCheckHandler)
 	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
-	router.GET("/token", jwttoken.TokenHandler)
-	router.GET("/nameserver", middleware.AuthMiddleware(), GetNameServerHandler(config, cloudflareSvc, natsSvc))
-	router.PUT("/nameserver", middleware.AuthMiddleware(), UpdateNameServerHandler(config, namecheapSvc, natsSvc))
-	router.GET("/domain/price", middleware.AuthMiddleware(), GetDomainPriceHandler(config, namecheapSvc, natsSvc))
-	router.POST("/domain", middleware.AuthMiddleware(), CreateDomainHandler(config, namecheapSvc, natsSvc))
-	server := &http.Server{
-		Addr:    ":8080",
-		Handler: router,
-	}
+	router.GET("/token", jwttoken.TokenHandler(&tokenService, apikeyAuth))
+	router.GET("/nameserver", middleware.AuthMiddleware(), GetNameServerHandler(config, cloudflareSvc, natsSvc, telegramBot, dnsresolver))
+	router.PUT("/nameserver", middleware.AuthMiddleware(), UpdateNameServerHandler(config, namecheapSvc, natsSvc, telegramBot))
+	router.GET("/domain/price", middleware.AuthMiddleware(), GetDomainPriceHandler(config, namecheapSvc, natsSvc, telegramBot))
+	router.POST("/domain", middleware.AuthMiddleware(), CreateDomainHandler(config, namecheapSvc, natsSvc, telegramBot))
 
-	go func() {
-		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			fmt.Println("Failed to start server:", err)
-			panic(err)
-		}
-	}()
-	select {}
+	return router
 }
 
 func healthCheckHandler(c *gin.Context) {

@@ -8,10 +8,10 @@ import (
 	"path/filepath"
 	"strings"
 	"syscall"
+	"tgs-automation/internal/config"
 	"tgs-automation/internal/log"
-	"tgs-automation/internal/util"
+	"tgs-automation/internal/telegram"
 	"tgs-automation/pkg/postgresql"
-	"tgs-automation/pkg/telegram"
 	"time"
 
 	"github.com/hashicorp/go-multierror"
@@ -59,7 +59,14 @@ func main() {
 }
 
 func Run(ctx context.Context) {
-	config := util.GetConfig()
+	configObj := config.NewConfigManager()
+	config, err := configObj.GetConfig(ctx)
+
+	if err != nil {
+		fmt.Printf("Failed to get config: %v\n", err)
+		return
+	}
+
 	momoDataInterface := postgresql.NewMomoDataInterface(config.Postgresql)
 	defer momoDataInterface.Close()
 
@@ -86,7 +93,7 @@ func Run(ctx context.Context) {
 		}
 		fmt.Println("-----")
 	}
-	err := deleteFiles()
+	err = deleteFiles()
 	if err != nil {
 		log.LogFatal(fmt.Sprintf("Failed to delete files: %v", err))
 	}

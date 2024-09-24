@@ -2,26 +2,26 @@ package postgresql
 
 import (
 	"database/sql"
-	"tgs-automation/internal/util"
+	"tgs-automation/internal/config"
 
 	_ "github.com/lib/pq"
 )
 
 type GetPromotionInterface interface {
-	GetPromotionDistributions(brand string, startDate string, endDate string) ([]PromotionDistribute, error)
+	GetPromotionDistributions(brand, startDate, endDate string) ([]PromotionDistribute, error)
 	GetPromotionTypes() ([]Category, error)
 	Close()
 }
 
 type GetPromotionService struct {
 	Db     *sql.DB
-	Config util.PostgresqlConfig
+	Config config.PostgresqlConfig
 }
 
 func (s *GetPromotionService) Close() {
 	s.Db.Close()
 }
-func NewPromotionInterface(config util.PostgresqlConfig) GetPromotionInterface {
+func NewPromotionInterface(config config.PostgresqlConfig) GetPromotionInterface {
 	db, err := NewDataAccessLayer(config)
 
 	if err != nil {

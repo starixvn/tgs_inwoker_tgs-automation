@@ -8,8 +8,8 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"tgs-automation/internal/config"
 	"tgs-automation/internal/log"
-	"tgs-automation/internal/util"
 )
 
 // Struct to hold the login credentials
@@ -24,7 +24,7 @@ type LoginResponse struct {
 }
 
 // Login attempts to authenticate a user and retrieve an authentication token.
-func Login(config util.DockerhubConfig) (string, error) {
+func Login(config config.DockerhubConfig) (string, error) {
 	log.LogInfo(fmt.Sprintf("config: %v", config))
 	credentials := LoginCredentials{
 		Username: config.Username,

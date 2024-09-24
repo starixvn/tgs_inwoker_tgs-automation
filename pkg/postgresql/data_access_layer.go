@@ -3,11 +3,11 @@ package postgresql
 import (
 	"database/sql"
 	"fmt"
+	"tgs-automation/internal/config"
 	"tgs-automation/internal/log"
-	"tgs-automation/internal/util"
 )
 
-func NewDataAccessLayer(config util.PostgresqlConfig) (*sql.DB, error) {
+func NewDataAccessLayer(config config.PostgresqlConfig) (*sql.DB, error) {
 	connStr := fmt.Sprintf("postgres://%s:%s@%s/%s?sslmode=disable",
 		config.PgUsername,
 		config.PgPassword,

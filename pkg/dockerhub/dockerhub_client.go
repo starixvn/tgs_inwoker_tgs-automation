@@ -2,12 +2,12 @@ package dockerhub
 
 import (
 	"net/http"
-	"tgs-automation/internal/util"
+	"tgs-automation/internal/config"
 )
 
 // DockerHubClient handles interactions with the Docker Hub API.
 type DockerHubClient struct {
-	Config util.DockerhubConfig
+	Config config.DockerhubConfig
 	Client *http.Client
 	Token  string
 }
@@ -17,7 +17,7 @@ type DockerHubClientInterface interface {
 }
 
 // NewDockerHubClient creates a new instance of DockerHubClient with the provided configuration.
-func NewDockerHubClient(config util.DockerhubConfig) *DockerHubClient {
+func NewDockerHubClient(config config.DockerhubConfig) *DockerHubClient {
 	token, err := Login(config)
 	if err != nil {
 		panic(err)

@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
-	"tgs-automation/internal/util"
+	"tgs-automation/internal/config"
 )
 
 type UpdateNameServerApiResponse struct {
@@ -46,7 +46,7 @@ func (n *NamecheapService) UpdateNameServer(domain string, nameServers string) (
 	return &apiResponse, nil
 }
 
-func getUrl(domain string, nameServers string, config util.TgsConfig) (string, error) {
+func getUrl(domain string, nameServers string, config config.TgsConfig) (string, error) {
 	domainParts := strings.Split(domain, ".")
 	if len(domainParts) != 2 {
 		return "", fmt.Errorf("invalid domain name format")

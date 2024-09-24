@@ -7,10 +7,12 @@ import (
 	"os/signal"
 	"path/filepath"
 	"syscall"
+	"tgs-automation/internal/config"
 	"tgs-automation/internal/log"
-	"tgs-automation/internal/util"
+	"tgs-automation/internal/telegram"
 	"tgs-automation/pkg/postgresql"
-	"tgs-automation/pkg/telegram"
+
+	//"tgs-automation/pkg/telegram"
 	"time"
 
 	"github.com/hashicorp/go-multierror"
@@ -33,14 +35,21 @@ type BrandTelegramChannel struct {
 	IsAllData bool
 }
 
-func getBrandTelegramChannels(config util.TgsConfig) []BrandTelegramChannel {
+func getBrandTelegramChannels(config config.TgsConfig) []BrandTelegramChannel {
 	return []BrandTelegramChannel{
 		{"MOPH", config.MomoTelegram.MophChatId, true},
 	}
 }
 
 func Run(ctx context.Context) {
-	config := util.GetConfig()
+	configObj := config.NewConfigManager()
+	config, err := configObj.GetConfig(ctx)
+
+	if err != nil {
+		fmt.Printf("Failed to get config: %v\n", err)
+		return
+	}
+
 	now := time.Now()
 	//for month
 	// firstDayOfLastMonth := time.Date(now.Year(), now.Month()-1, 1, 0, 0, 0, 0, time.UTC)
@@ -63,13 +72,13 @@ func Run(ctx context.Context) {
 		}
 	}
 
-	err := deleteFiles()
+	err = deleteFiles()
 	if err != nil {
 		log.LogError(fmt.Sprintf("Failed to delete files: %v", err))
 	}
 }
 
-func createBrandReport(brand BrandTelegramChannel, startDate string, endDate string, services BrandStatSvc, config util.TgsConfig) error {
+func createBrandReport(brand BrandTelegramChannel, startDate string, endDate string, services BrandStatSvc, config config.TgsConfig) error {
 	file := xlsx.NewFile()
 	filename, err := processReport(file, brand.Code, startDate, endDate, services, brand.IsAllData)
 
@@ -175,7 +184,7 @@ type BrandStatSvc struct {
 	WithdrawPlayerCountSvc postgresql.WithdrawPlayerCountService
 }
 
-func CreateBrandStatSvc(config util.PostgresqlConfig) BrandStatSvc {
+func CreateBrandStatSvc(config config.PostgresqlConfig) BrandStatSvc {
 
 	return BrandStatSvc{
 		PromotionSvc:           postgresql.NewPromotionInterface(config),

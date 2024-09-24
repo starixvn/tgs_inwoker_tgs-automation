@@ -7,9 +7,9 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"tgs-automation/internal/config"
 	"tgs-automation/internal/opentelemetry"
-	"tgs-automation/internal/util"
-	"tgs-automation/pkg/telegram"
+	"tgs-automation/internal/telegram"
 	"time"
 
 	"github.com/nats-io/nats.go"
@@ -24,17 +24,24 @@ type TelegramMessage struct {
 }
 
 func main() {
-	// Load configuration
-	config := util.GetConfig()
-
 	// Initialize OpenTelemetry tracer
 	ctx, _ := context.WithTimeout(context.Background(), 10*time.Second)
 
-	tp, mp := opentelemetry.InitialOpenTelemetry(ctx, config, ":8889")
+	configMgr := config.NewConfigManager()
+	config, err := configMgr.GetConfig(ctx)
+	if err != nil {
+		log.Fatalf("error in getting config: %v", err.Error())
+	}
+
+	telemetry := opentelemetry.NewTelemetry(config)
+	err = telemetry.Initialize(ctx, ":8889")
+	if err != nil {
+		log.Fatalf("error in getting opentelemetry: %v", err.Error())
+	}
 	defer func() {
-		tp.Shutdown(ctx)
-		mp.Shutdown(ctx)
+		telemetry.Shutdown(ctx)
 	}()
+
 	// Initialize Telegram bot
 	bot, err := initTelegramBot(config.Telegram.TelegramBotToken)
 	if err != nil {

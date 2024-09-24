@@ -3,15 +3,15 @@ package main
 // go install github.com/google/wire/cmd/wire@latest
 import (
 	"net/http"
-	"tgs-automation/internal/httpclient"
-	"tgs-automation/internal/util"
+	"tgs-automation/internal/config"
+	tgsHttp "tgs-automation/internal/http"
 	"tgs-automation/pkg/googlesheet"
 	"tgs-automation/pkg/namecheap"
 	"tgs-automation/pkg/postgresql"
 	"time"
 )
 
-func NewExpiredDomainsService(config util.TgsConfig) *ExpiredDomainsService {
+func NewExpiredDomainsService(config config.TgsConfig) *ExpiredDomainsService {
 	client := providerHttpClient()
 	return &ExpiredDomainsService{
 		httpClient:           client,
@@ -22,15 +22,15 @@ func NewExpiredDomainsService(config util.TgsConfig) *ExpiredDomainsService {
 	}
 }
 
-func providerNameCheap(cfg util.TgsConfig, client *httpclient.StandardHTTPClient) namecheap.NamecheapApi {
+func providerNameCheap(cfg config.TgsConfig, client *tgsHttp.StandardHTTPClient) namecheap.NamecheapApi {
 	return namecheap.New(cfg)
 }
 
-func providerPostgresql(cfg util.PostgresqlConfig) postgresql.GetAgentServiceInterface {
+func providerPostgresql(cfg config.PostgresqlConfig) postgresql.GetAgentServiceInterface {
 	return postgresql.New(cfg)
 }
 
-func providerGoogleSheetSvc(cfg util.GoogleSheetConfig) *googlesheet.GoogleSheetService {
+func providerGoogleSheetSvc(cfg config.GoogleSheetConfig) *googlesheet.GoogleSheetService {
 	itf, svc, err := googlesheet.New(cfg)
 	if err != nil {
 		return svc
@@ -42,7 +42,7 @@ func providerGoogleSheetSvc(cfg util.GoogleSheetConfig) *googlesheet.GoogleSheet
 	return nil
 }
 
-func providerGoogleSheetInterface(cfg util.GoogleSheetConfig) googlesheet.GoogleSheetServiceInterface {
+func providerGoogleSheetInterface(cfg config.GoogleSheetConfig) googlesheet.GoogleSheetServiceInterface {
 	itf, svc, err := googlesheet.New(cfg)
 	if err != nil {
 		return itf
@@ -53,8 +53,8 @@ func providerGoogleSheetInterface(cfg util.GoogleSheetConfig) googlesheet.Google
 	return nil
 }
 
-func providerHttpClient() *httpclient.StandardHTTPClient {
-	return &httpclient.StandardHTTPClient{
+func providerHttpClient() *tgsHttp.StandardHTTPClient {
+	return &tgsHttp.StandardHTTPClient{
 		Client: &http.Client{
 			Timeout: 10 * time.Second,
 		},

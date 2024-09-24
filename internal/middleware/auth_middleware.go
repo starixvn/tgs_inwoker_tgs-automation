@@ -5,7 +5,7 @@ import (
 
 	"tgs-automation/internal/log"
 
-	jwttoken "tgs-automation/internal/jwt_token"
+	jwttoken "tgs-automation/internal/token"
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt"

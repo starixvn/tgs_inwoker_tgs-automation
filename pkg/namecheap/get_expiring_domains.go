@@ -2,8 +2,8 @@ package namecheap
 
 import (
 	"fmt"
+	"tgs-automation/internal/config"
 	"tgs-automation/internal/log"
-	"tgs-automation/internal/util"
 	"time"
 
 	"github.com/tebeka/selenium"
@@ -12,7 +12,7 @@ import (
 
 //TODO: to fix the element not interactable
 
-func Login(config util.TgsConfig) {
+func Login(config config.TgsConfig) {
 	selenium.SetDebug(false)
 	service, err := selenium.NewChromeDriverService(config.ChromeDriverPath, 4444)
 	if err != nil {

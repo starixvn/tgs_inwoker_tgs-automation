@@ -1,4 +1,4 @@
-package util
+package http
 
 import (
 	"io/ioutil"

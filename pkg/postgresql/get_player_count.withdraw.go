@@ -1,14 +1,14 @@
 package postgresql
 
 import (
-	"tgs-automation/internal/util"
+	"tgs-automation/internal/config"
 
 	_ "github.com/lib/pq"
 )
 
 // 提款人數
 type WithdrawPlayerCountService struct {
-	Config util.PostgresqlConfig
+	Config config.PostgresqlConfig
 }
 
 func (bpc *WithdrawPlayerCountService) GetPlayerCount(brandCode, startDate, endDate string) (int, error) {

@@ -6,10 +6,10 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"tgs-automation/internal/util"
+	"tgs-automation/internal/config"
 )
 
-func GetToken(config util.LetsTalkConfig) (string, error) {
+func GetToken(config config.LetsTalkConfig) (string, error) {
 	apiURL := "https://message.biatalk.cc/bot/v3/sign-token"
 
 	payload := map[string]string{

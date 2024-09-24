@@ -6,9 +6,9 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
-	"tgs-automation/internal/httpclient"
+	"tgs-automation/internal/config"
+	tgsHttp "tgs-automation/internal/http"
 	"tgs-automation/internal/log"
-	"tgs-automation/internal/util"
 	"tgs-automation/pkg/googlesheet"
 	"tgs-automation/pkg/namecheap"
 	"tgs-automation/pkg/postgresql"
@@ -27,7 +27,7 @@ type ExpiredDomainsService struct {
 	googlesheetSvc       *googlesheet.GoogleSheetService
 	postgresqlInterface  postgresql.GetAgentServiceInterface
 	namecheapInterface   namecheap.NamecheapApi
-	httpClient           *httpclient.StandardHTTPClient
+	httpClient           *tgsHttp.StandardHTTPClient
 }
 
 func initTracer() func() {
@@ -87,7 +87,14 @@ func (app *ExpiredDomainsService) Create(sheetName string) error {
 }
 
 func main() {
-	config := util.GetConfig()
+	ctx := context.Background()
+	configMgr := config.NewConfigManager()
+	config, err := configMgr.GetConfig(ctx)
+	if err != nil {
+		log.LogFatal("error in getting config:" + err.Error())
+		return
+	}
+
 	sheetName := time.Now().Format("01/2006")
 
 	app, err := InitExpiredDomainsService(config)

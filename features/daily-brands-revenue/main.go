@@ -8,8 +8,8 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"tgs-automation/internal/config"
 	"tgs-automation/internal/log"
-	"tgs-automation/internal/util"
 	"tgs-automation/pkg/letstalk"
 	"tgs-automation/pkg/postgresql"
 )
@@ -25,7 +25,13 @@ func main() {
 }
 
 func Run(ctx context.Context) {
-	config := util.GetConfig()
+	configObj := config.NewConfigManager()
+	config, err := configObj.GetConfig(ctx)
+
+	if err != nil {
+		fmt.Printf("Failed to get config: %v\n", err)
+		return
+	}
 
 	message, err := getMessageFromBrandsRevenue(config.Postgresql)
 	if err != nil {
@@ -40,7 +46,7 @@ func Run(ctx context.Context) {
 	}
 }
 
-func sendMessageToLetsTalk(config util.LetsTalkConfig, message string) error {
+func sendMessageToLetsTalk(config config.LetsTalkConfig, message string) error {
 	token, err := letstalk.GetToken(config)
 	if err != nil {
 		log.LogInfoAndSendTelegram("Get Token Error:" + token)
@@ -78,7 +84,7 @@ func sendMessageToLetsTalk(config util.LetsTalkConfig, message string) error {
 	return nil
 }
 
-func getMessageFromBrandsRevenue(config util.PostgresqlConfig) (string, error) {
+func getMessageFromBrandsRevenue(config config.PostgresqlConfig) (string, error) {
 	app := postgresql.NewDailyBrandsRevenueInterface(config)
 
 	brands, err := app.GetDailyBrandsRevenue()

@@ -1,9 +1,10 @@
 package create_certificate
 
 import (
+	"context"
 	"fmt"
+	"tgs-automation/internal/config"
 	"tgs-automation/internal/log"
-	"tgs-automation/internal/util"
 	"time"
 
 	"github.com/tebeka/selenium"
@@ -18,11 +19,19 @@ type CreateCDNCertServicer interface {
 type CreateCDNCertService struct {
 	wd     selenium.WebDriver
 	svc    *selenium.Service
-	config util.TgsConfig
+	config config.TgsConfig
 }
 
 func CreateCertificateByDomain(domain string) {
-	config := util.GetConfig()
+	ctx := context.Background()
+	configObj := config.NewConfigManager()
+	config, err := configObj.GetConfig(ctx)
+
+	if err != nil {
+		fmt.Printf("Failed to get config: %v\n", err)
+		return
+	}
+
 	cdnService, err := NewCreateCDNCertService(config)
 	if err != nil {
 		fmt.Printf("Failed to initialize CDN service: %v\n", err)
@@ -32,7 +41,7 @@ func CreateCertificateByDomain(domain string) {
 	fmt.Printf("Failed to create certificate in CDN: %v\n", err)
 }
 
-func NewCreateCDNCertService(config util.TgsConfig) (*CreateCDNCertService, error) {
+func NewCreateCDNCertService(config config.TgsConfig) (*CreateCDNCertService, error) {
 	selenium.SetDebug(false)
 	service, err := selenium.NewChromeDriverService(config.ChromeDriverPath, 4444)
 	if err != nil {

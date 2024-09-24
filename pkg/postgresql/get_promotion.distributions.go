@@ -7,7 +7,7 @@ import (
 	_ "github.com/lib/pq"
 )
 
-func (s *GetPromotionService) GetPromotionDistributions(brandCode string, startDate string, endDate string) ([]PromotionDistribute, error) {
+func (s *GetPromotionService) GetPromotionDistributions(brandCode, startDate, endDate string) ([]PromotionDistribute, error) {
 	query := "select * from report.get_promotion_distributions($1, $2, $3);"
 
 	// Execute the query

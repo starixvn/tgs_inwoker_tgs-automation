@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"html/template"
 	"os"
+	"tgs-automation/internal/config"
 	"tgs-automation/internal/log"
-	"tgs-automation/internal/util"
 	"tgs-automation/pkg/postgresql"
 	"time"
 
@@ -33,7 +33,7 @@ type GoogleSheetService struct {
 	SheetService  *sheets.Service
 }
 
-func New(config util.GoogleSheetConfig) (GoogleSheetServiceInterface, *GoogleSheetService, error) {
+func New(config config.GoogleSheetConfig) (GoogleSheetServiceInterface, *GoogleSheetService, error) {
 	svc := &GoogleSheetService{
 		GoogleApiKey:  config.GoogleApiKey,
 		SpreadsheetId: config.SheetId,

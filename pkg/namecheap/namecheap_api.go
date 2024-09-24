@@ -2,7 +2,7 @@ package namecheap
 
 import (
 	"context"
-	"tgs-automation/internal/util"
+	"tgs-automation/internal/config"
 )
 
 // mockgen -destination pkg/namecheap/mocks/mock_namecheap.go -package=namecheap tgs-automation/pkg/namecheap NamecheapAPI
@@ -18,10 +18,10 @@ type NamecheapApi interface {
 }
 
 type NamecheapService struct {
-	Config util.TgsConfig
+	Config config.TgsConfig
 }
 
-func New(config util.TgsConfig) NamecheapApi {
+func New(config config.TgsConfig) NamecheapApi {
 	return &NamecheapService{
 		Config: config,
 	}

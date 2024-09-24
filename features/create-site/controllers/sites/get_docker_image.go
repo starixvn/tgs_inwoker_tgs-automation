@@ -5,8 +5,8 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"tgs-automation/internal/config"
 	"tgs-automation/internal/log"
-	"tgs-automation/internal/util"
 	"tgs-automation/pkg/dockerhub"
 )
 
@@ -15,11 +15,11 @@ type DockerImageFetcher interface {
 }
 
 type DockerImageService struct {
-	config util.DockerhubConfig
+	config config.DockerhubConfig
 	client *dockerhub.DockerHubClient
 }
 
-func NewDockerImageService(config util.DockerhubConfig) DockerImageFetcher {
+func NewDockerImageService(config config.DockerhubConfig) DockerImageFetcher {
 	client := dockerhub.NewDockerHubClient(config)
 	return &DockerImageService{config: config, client: client}
 }

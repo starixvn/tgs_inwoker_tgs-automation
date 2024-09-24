@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"net/http"
 
-	jwttoken "tgs-automation/internal/jwt_token"
+	"tgs-automation/internal/config"
 	"tgs-automation/internal/log"
 	middleware "tgs-automation/internal/middleware"
-	"tgs-automation/internal/util"
+	jwttoken "tgs-automation/internal/token"
 	"tgs-automation/pkg/postgresql"
 
 	_ "tgs-automation/features/data-retrieve-api/docs"
@@ -19,12 +19,20 @@ import (
 
 func main() {
 	router := gin.Default()
+
+	tokenService := jwttoken.NewJWTService()
+	apiKeyAuth, err := jwttoken.NewAPIKeyAuth()
+	if err != nil {
+		log.LogError("Error initializing APIKeyAuth:" + err.Error())
+		return
+	}
+
 	router.GET("/healthz", healthCheckHandler)
 	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
-	router.GET("/token", jwttoken.TokenHandler)
+	router.GET("/token", jwttoken.TokenHandler(tokenService, apiKeyAuth))
 	router.POST("/player_adjust", middleware.AuthMiddleware(), getPlayersAdjustAmount)
 
-	err := router.Run(":8080")
+	err = router.Run(":8080")
 	if err != nil {
 		fmt.Println("Failed to start server:", err)
 	}
@@ -36,8 +44,14 @@ func healthCheckHandler(c *gin.Context) {
 
 // albumHandler sends a protected resource
 func getPlayersAdjustAmount(c *gin.Context) {
-	// Load configuration
-	config := util.GetConfig()
+	ctx := c.Request.Context()
+	configObj := config.NewConfigManager()
+	config, err := configObj.GetConfig(ctx)
+
+	if err != nil {
+		fmt.Printf("Failed to get config: %v\n", err)
+		return
+	}
 
 	// Initialize the database connection or service interface
 	app := postgresql.NewGetPlayersAdjustAmountInterface(config.Postgresql)

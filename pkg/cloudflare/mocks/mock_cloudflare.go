@@ -11,7 +11,7 @@ package cloudflare
 
 import (
 	reflect "reflect"
-	util "tgs-automation/internal/util"
+	config "tgs-automation/internal/config"
 
 	gomock "go.uber.org/mock/gomock"
 )
@@ -40,7 +40,7 @@ func (m *MockCloudflareApi) EXPECT() *MockCloudflareApiMockRecorder {
 }
 
 // CreateDNS mocks base method.
-func (m *MockCloudflareApi) CreateDNS(arg0 util.TgsConfig, arg1 string) error {
+func (m *MockCloudflareApi) CreateDNS(arg0 config.TgsConfig, arg1 string) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CreateDNS", arg0, arg1)
 	ret0, _ := ret[0].(error)
@@ -54,7 +54,7 @@ func (mr *MockCloudflareApiMockRecorder) CreateDNS(arg0, arg1 any) *gomock.Call 
 }
 
 // DeleteDNS mocks base method.
-func (m *MockCloudflareApi) DeleteDNS(arg0 util.TgsConfig, arg1 string) error {
+func (m *MockCloudflareApi) DeleteDNS(arg0 config.TgsConfig, arg1 string) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "DeleteDNS", arg0, arg1)
 	ret0, _ := ret[0].(error)
@@ -68,7 +68,7 @@ func (mr *MockCloudflareApiMockRecorder) DeleteDNS(arg0, arg1 any) *gomock.Call 
 }
 
 // GetDnsInfo mocks base method.
-func (m *MockCloudflareApi) GetDnsInfo(arg0 util.TgsConfig, arg1 string) error {
+func (m *MockCloudflareApi) GetDnsInfo(arg0 config.TgsConfig, arg1 string) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetDnsInfo", arg0, arg1)
 	ret0, _ := ret[0].(error)
@@ -82,7 +82,7 @@ func (mr *MockCloudflareApiMockRecorder) GetDnsInfo(arg0, arg1 any) *gomock.Call
 }
 
 // GetTargetNameServers mocks base method.
-func (m *MockCloudflareApi) GetTargetNameServers(arg0 util.TgsConfig, arg1 string) (string, error) {
+func (m *MockCloudflareApi) GetTargetNameServers(arg0 config.TgsConfig, arg1 string) (string, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetTargetNameServers", arg0, arg1)
 	ret0, _ := ret[0].(string)

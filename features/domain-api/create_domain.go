@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
-	"tgs-automation/internal/util"
+	"tgs-automation/internal/config"
+	"tgs-automation/internal/nats"
+	"tgs-automation/internal/telegram"
 	"tgs-automation/pkg/namecheap"
 	"time"
 
@@ -30,9 +32,10 @@ type CreateDomainRequest struct {
 // @Failure 400 {object} map[string]interface{} "error"
 // @Router /domain [post]
 func CreateDomainHandler(
-	config util.TgsConfig,
+	config config.TgsConfig,
 	api namecheap.NamecheapApi,
-	natsSvc util.NatsPublisherService,
+	natsSvc nats.NatsPublisherService,
+	telegramBot *telegram.TelegramBot,
 ) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var request CreateDomainRequest
@@ -69,9 +72,7 @@ func CreateDomainHandler(
 		balance, _ := parseXml(balanceResponse, "//ApiResponse/CommandResponse/UserGetBalancesResult/@AvailableBalance")
 
 		message := formatDomainMessage(status, request.Domain, promotionCode, chargeAmount, errorMsg, balance, currency)
-		//natsSvc.Publish(request.ChatId, message)
-
-		err = sendTelegram(c.Request.Context(), config.ApiUrl.TelegramApi, config.ApiUrl.TelegramApiKey, request.ChatId, message)
+		err = telegramBot.SendMessageWithChatIdAndContext(c.Request.Context(), request.ChatId, message)
 		if err != nil {
 			fmt.Println("Failed to send Telegram message:", err)
 		}

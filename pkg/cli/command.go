@@ -1,7 +1,9 @@
 package cli
 
 import (
-	"tgs-automation/internal/util"
+	"context"
+	"fmt"
+	"tgs-automation/internal/config"
 	"tgs-automation/pkg/cdnetworks/control_group"
 	"tgs-automation/pkg/cdnetworks/create_certificate"
 	"tgs-automation/pkg/cdnetworks/create_domain"
@@ -18,7 +20,7 @@ type CdnCommand struct {
 	DomainName string
 	DomainId   string
 	OriginSet  string
-	Config     util.TgsConfig
+	Config     config.TgsConfig
 }
 
 // Command interface
@@ -38,6 +40,15 @@ func (c *CdnCommand) UpdateControlGroup() {
 }
 
 func (c *CdnCommand) CreateDomain() {
+	ctx := context.Background()
+	configObj := config.NewConfigManager()
+	config, err := configObj.GetConfig(ctx)
+
+	if err != nil {
+		fmt.Printf("Failed to get config: %v\n", err)
+		return
+	}
+
 	create_domain.CreateDomains(c.DomainName, c.OriginSet)
 
 	time.Sleep(1 * time.Second)
@@ -45,7 +56,6 @@ func (c *CdnCommand) CreateDomain() {
 	time.Sleep(1 * time.Second)
 	create_certificate.CreateCertificateByDomain(c.DomainName)
 
-	config := util.GetConfig()
 	cloudflareSvc := cloudflare.NewCloudflare(config)
 	cloudflareSvc.CreateDNS(c.DomainName)
 }

@@ -1,11 +1,19 @@
 package log
 
 import (
+	"context"
 	"fmt"
 	"os"
-	"tgs-automation/pkg/telegram"
+	"sync"
+	"tgs-automation/internal/config"
+	"tgs-automation/internal/telegram"
 
 	log "github.com/sirupsen/logrus"
+)
+
+var (
+	telegramBotInstance telegram.TelegramService
+	initOnce            sync.Once
 )
 
 func init() {
@@ -18,6 +26,27 @@ func init() {
 	}
 
 	log.SetOutput(file)
+
+	ctx := context.Background()
+	configObj := config.NewConfigManager()
+	tgsConfig, err := configObj.GetConfig(ctx)
+
+	if err != nil {
+		fmt.Printf("Failed to get config: %v\n", err)
+		log.Fatal("Failed to get config.")
+		return
+	}
+
+	// 初始化 TelegramBot 實例
+	initOnce.Do(func() {
+		bot := telegram.NewTelegramService(tgsConfig.Telegram.TelegramBotToken, tgsConfig)
+		if err != nil {
+			log.Error("Failed to initialize Telegram bot:", err)
+		} else {
+			telegramBotInstance = bot
+			log.Info("Telegram bot initialized successfully")
+		}
+	})
 }
 
 func LogInfo(msg string) {
@@ -27,7 +56,8 @@ func LogInfo(msg string) {
 func LogInfoAndSendTelegram(msg string) {
 	fmt.Println("Info", msg)
 	log.Info(msg)
-	err := telegram.SendMessage("Info: " + msg)
+
+	err := telegramBotInstance.SendMessage(context.Background(), "Info: "+msg)
 	if err != nil {
 		fmt.Println("Failed to send Telegram message:", err)
 	}
@@ -46,7 +76,7 @@ func LogError(msg string) {
 func LogErrorAndSendTelegram(msg string) {
 	fmt.Println("Error", msg)
 	log.Error(msg)
-	err := telegram.SendMessage("Error: " + msg)
+	err := telegramBotInstance.SendMessage(context.Background(), "Error "+msg)
 	if err != nil {
 		fmt.Println("Failed to send Telegram message:", err)
 	}
@@ -60,7 +90,7 @@ func LogFatal(msg string) {
 func LogFatalAndSendTelegram(msg string) {
 	fmt.Println("Fatal", msg)
 	log.Fatal(msg)
-	err := telegram.SendMessage("Fatal: " + msg)
+	err := telegramBotInstance.SendMessage(context.Background(), "Fatal: "+msg)
 	if err != nil {
 		fmt.Println("Failed to send Telegram message:", err)
 	}

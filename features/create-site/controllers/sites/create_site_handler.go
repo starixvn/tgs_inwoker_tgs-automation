@@ -1,17 +1,25 @@
 package sites
 
 import (
+	"context"
 	"fmt"
 	"net/http"
+	"tgs-automation/internal/config"
 	"tgs-automation/internal/log"
-	"tgs-automation/internal/util"
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
 )
 
 func CreateSiteHandler(c *gin.Context) {
-	config := util.GetConfig()
+	ctx := context.Background()
+	configObj := config.NewConfigManager()
+	config, err := configObj.GetConfig(ctx)
+
+	if err != nil {
+		fmt.Printf("Failed to get config: %v\n", err)
+		return
+	}
 	request, err := parseRequestBody(c)
 
 	if err != nil {

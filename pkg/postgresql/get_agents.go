@@ -3,8 +3,8 @@ package postgresql
 import (
 	"database/sql"
 	"fmt"
+	"tgs-automation/internal/config"
 	"tgs-automation/internal/log"
-	"tgs-automation/internal/util"
 	"tgs-automation/pkg/namecheap"
 
 	_ "github.com/lib/pq"
@@ -24,10 +24,10 @@ type GetAgentServiceInterface interface {
 
 type GetAgentService struct {
 	Db     *sql.DB
-	Config util.PostgresqlConfig
+	Config config.PostgresqlConfig
 }
 
-func New(config util.PostgresqlConfig) GetAgentServiceInterface {
+func New(config config.PostgresqlConfig) GetAgentServiceInterface {
 	db, err := NewDataAccessLayer(config)
 
 	if err != nil {

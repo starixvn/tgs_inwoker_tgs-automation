@@ -1,16 +1,24 @@
 package cloudflare
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
 	"strings"
-	"tgs-automation/internal/util"
+	"tgs-automation/internal/config"
 )
 
 func (svc *CloudflareService) GetTargetNameServers(domain string) (string, error) {
-	config := util.GetConfig()
+	ctx := context.Background()
+	configObj := config.NewConfigManager()
+	config, err := configObj.GetConfig(ctx)
+
+	if err != nil {
+		fmt.Printf("Failed to get config: %v\n", err)
+		return "", err
+	}
 	// Get Cloudflare name servers
 	url := fmt.Sprintf("https://api.cloudflare.com/client/v4/zones?per_page=1000&name=%s", domain)
 	req, _ := http.NewRequest("GET", url, nil)

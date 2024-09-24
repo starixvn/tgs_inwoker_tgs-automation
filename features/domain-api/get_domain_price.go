@@ -5,10 +5,11 @@ import (
 	"fmt"
 	"net/http"
 	"reflect"
+	"tgs-automation/internal/config"
 	"tgs-automation/internal/log"
-	"tgs-automation/internal/util"
+	"tgs-automation/internal/nats"
+	"tgs-automation/internal/telegram"
 	"tgs-automation/pkg/namecheap"
-	"tgs-automation/pkg/telegram"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -46,9 +47,10 @@ func printAllFields(c *gin.Context) {
 // @Failure      400     {object}  map[string]interface{}
 // @Router       /domain/price [get]
 func GetDomainPriceHandler(
-	config util.TgsConfig,
+	config config.TgsConfig,
 	api namecheap.NamecheapApi,
-	natsSvc util.NatsPublisherService,
+	natsSvc nats.NatsPublisherService,
+	telegramBot *telegram.TelegramBot,
 ) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		printAllFields(c)
@@ -72,7 +74,7 @@ func GetDomainPriceHandler(
 		if !isAvailable {
 			message := fmt.Sprintf("[Get Domain Price]\ndomain: %s\ndomain 已經被使用，無法提供資訊.", request.Domain)
 			c.JSON(http.StatusBadRequest, gin.H{"info": message})
-			telegram.SendMessageWithChatId(message, request.ChatId)
+			telegramBot.SendMessage(request.ChatId, message)
 			return
 		}
 
@@ -85,15 +87,13 @@ func GetDomainPriceHandler(
 		if !domainPriceResponse.CanRegister {
 			message := fmt.Sprintf("[Get Domain Price]\ndomain: %s\ndomain 無法註冊.", request.Domain)
 			c.JSON(http.StatusConflict, gin.H{"info": message})
-			telegram.SendMessageWithChatId(message, request.ChatId)
+			telegramBot.SendMessage(request.ChatId, message)
 			return
 		}
 
 		message := fmt.Sprintf("[Get Domain Price]\ndomain: %s\nRegular Price: %s\nPromotion Price: %s", request.Domain, domainPriceResponse.RegularPrice, domainPriceResponse.Price)
 
-		//natsSvc.Publish(request.ChatId, message)
-
-		err = sendTelegram(c.Request.Context(), config.ApiUrl.TelegramApi, config.ApiUrl.TelegramApiKey, request.ChatId, message)
+		err = telegramBot.SendMessageWithChatIdAndContext(ctx, request.ChatId, message)
 		if err != nil {
 			fmt.Println("Failed to send Telegram message:", err)
 		}
