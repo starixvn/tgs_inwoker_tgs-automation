@@ -111,7 +111,6 @@ func setupRouter(
 	tokenService jwttoken.JWTService,
 	apikeyAuth *jwttoken.APIKeyAuth,
 	telegramBot *telegram.TelegramBot) *gin.Engine {
-
 	router := gin.Default()
 	router.ForwardedByClientIP = true
 	router.SetTrustedProxies([]string{"127.0.0.1", "10.139.0.0/16"})
