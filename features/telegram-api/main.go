@@ -68,7 +68,6 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to build container: %v", err)
 	}
-
 	err = container.Invoke(func(
 		config config.TgsConfig,
 		telemetry *opentelemetry.Telemetry,
@@ -82,13 +81,11 @@ func main() {
 			return err
 		}
 		defer telemetry.Shutdown(ctx)
-
 		router := setupRouter(telemetry, tokenService, apikeyAuth, telegramBot)
 		server := &http.Server{
 			Addr:    ":8081",
 			Handler: router,
 		}
-
 		go func() {
 			if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 				log.Fatalf("ListenAndServe(): %v", err)
