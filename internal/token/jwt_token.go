@@ -96,7 +96,7 @@ func (a *APIKeyAuth) IsAuthorized(apiKey string) bool {
 	return apiKey != "" && apiKey == a.ExpectedAPIKey
 }
 
-func TokenHandler(tokenService TokenService, apiKeyAuth *APIKeyAuth) gin.HandlerFunc {
+func TokenHandler(tokenService JWTService, apiKeyAuth *APIKeyAuth) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		apiKey := c.GetHeader("apikey")
 
