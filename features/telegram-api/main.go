@@ -72,7 +72,7 @@ func main() {
 	err = container.Invoke(func(
 		config config.TgsConfig,
 		telemetry *opentelemetry.Telemetry,
-		tokenService jwttoken.TokenService,
+		tokenService jwttoken.JWTService,
 		apikeyAuth *jwttoken.APIKeyAuth,
 		telegramBot *telegram.TelegramBot,
 	) error {
@@ -108,7 +108,7 @@ func healthCheckHandler(c *gin.Context) {
 
 func setupRouter(
 	telemetry *opentelemetry.Telemetry,
-	tokenService jwttoken.TokenService,
+	tokenService jwttoken.JWTService,
 	apikeyAuth *jwttoken.APIKeyAuth,
 	telegramBot *telegram.TelegramBot) *gin.Engine {
 
