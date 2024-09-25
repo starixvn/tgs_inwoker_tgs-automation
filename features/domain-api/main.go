@@ -27,7 +27,7 @@ import (
 func main() {
 	gin.SetMode(gin.ReleaseMode)
 	ctx := context.Background()
-	container, err := BuildContainer(ctx, os.Getenv("NodeIP"), 24224)
+	container, err := BuildContainer(ctx, os.Getenv("NODE_IP"), 24224)
 	if err != nil {
 		log.Fatalf("Failed to build container: %v", err)
 	}

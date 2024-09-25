@@ -69,7 +69,7 @@ func ProvideTelegramBot(config config.TgsConfig) (*telegram.TelegramBot, error) 
 
 func main() {
 	gin.SetMode(gin.ReleaseMode)
-	container, err := BuildContainer(os.Getenv("NodeIP"), 24224)
+	container, err := BuildContainer(os.Getenv("NODE_IP"), 24224)
 	if err != nil {
 		log.Fatalf("Failed to build container: %v", err)
 	}
