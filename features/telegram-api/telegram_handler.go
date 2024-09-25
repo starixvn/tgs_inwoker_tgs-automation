@@ -1,9 +1,10 @@
 package main
 
 import (
-	"log"
+	"fmt"
 	"net/http"
 	_ "tgs-automation/features/domain-api/docs"
+	"tgs-automation/internal/fluentbitlogger"
 	"tgs-automation/internal/telegram"
 
 	"github.com/gin-gonic/gin"
@@ -23,15 +24,16 @@ import (
 // @Success 200 {object} map[string]interface{} "success"
 // @Failure 400 {object} map[string]interface{} "error"
 // @Router /send [post]
-func TelegramMessageHandler(telegramBot *telegram.TelegramBot) gin.HandlerFunc {
+func TelegramMessageHandler(
+	telegramBot *telegram.TelegramBot,
+	logger *fluentbitlogger.Logger,
+) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		span := trace.SpanFromContext(c.Request.Context())
 		defer span.End() // 确保在函数结束时结束 span
 
-		//获取 TraceID
 		traceID := span.SpanContext().TraceID().String()
-
-		log.Println("traceId:" + traceID)
+		logger.Info(fmt.Sprintln("traceId:" + traceID))
 
 		var request SendTelegramRequest
 		if err := c.BindJSON(&request); err != nil {
@@ -49,7 +51,7 @@ func TelegramMessageHandler(telegramBot *telegram.TelegramBot) gin.HandlerFunc {
 		err := telegramBot.SendMessage(request.ChatId, request.Message)
 
 		if err != nil {
-			log.Printf("Error sending Telegram message: %v", err)
+			logger.Error(fmt.Sprintf("Error sending Telegram message: %v", err))
 			span.RecordError(err) // 在 span 中记录错误
 			span.SetStatus(codes.Error, "Error sending Telegram message")
 			c.JSON(http.StatusInternalServerError, gin.H{"Error sending Telegram message": err.Error()})

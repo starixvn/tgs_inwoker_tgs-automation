@@ -79,6 +79,7 @@ func main() {
 		tokenService jwttoken.JWTService,
 		apikeyAuth *jwttoken.APIKeyAuth,
 		telegramBot *telegram.TelegramBot,
+		logger *fluentbitlogger.Logger,
 	) error {
 		ctx := context.Background()
 		if err := telemetry.Initialize(ctx, ":8889"); err != nil {
@@ -86,7 +87,7 @@ func main() {
 			return err
 		}
 		defer telemetry.Shutdown(ctx)
-		router := setupRouter(telemetry, tokenService, apikeyAuth, telegramBot)
+		router := setupRouter(telemetry, tokenService, apikeyAuth, telegramBot, logger)
 		server := &http.Server{
 			Addr:    ":8081",
 			Handler: router,
@@ -112,7 +113,9 @@ func setupRouter(
 	telemetry *opentelemetry.Telemetry,
 	tokenService jwttoken.JWTService,
 	apikeyAuth *jwttoken.APIKeyAuth,
-	telegramBot *telegram.TelegramBot) *gin.Engine {
+	telegramBot *telegram.TelegramBot,
+	logger *fluentbitlogger.Logger,
+) *gin.Engine {
 	router := gin.Default()
 	router.ForwardedByClientIP = true
 	router.SetTrustedProxies([]string{"127.0.0.1", "10.139.0.0/16"})
@@ -122,6 +125,6 @@ func setupRouter(
 	router.GET("/healthz", healthCheckHandler)
 	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 	router.GET("/token", jwttoken.TokenHandler(tokenService, apikeyAuth))
-	router.POST("/send", middleware.AuthMiddleware(), TelegramMessageHandler(telegramBot))
+	router.POST("/send", middleware.AuthMiddleware(), TelegramMessageHandler(telegramBot, logger))
 	return router
 }
