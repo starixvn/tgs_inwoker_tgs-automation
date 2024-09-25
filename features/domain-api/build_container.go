@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"tgs-automation/internal/config"
 	"tgs-automation/internal/dnsresolver"
+	"tgs-automation/internal/fluentbitlogger"
 	"tgs-automation/internal/nats"
 	"tgs-automation/internal/opentelemetry"
 	"tgs-automation/internal/telegram"
@@ -15,7 +16,7 @@ import (
 	"go.uber.org/dig"
 )
 
-func BuildContainer(ctx context.Context) (*dig.Container, error) {
+func BuildContainer(ctx context.Context, nodeip string, port int) (*dig.Container, error) {
 	container := dig.New()
 	if err := container.Provide(config.NewConfigManager); err != nil {
 		return nil, fmt.Errorf("failed to provide ConfigManager: %w", err)
@@ -63,6 +64,9 @@ func BuildContainer(ctx context.Context) (*dig.Container, error) {
 		return nil, fmt.Errorf("failed to provide DNSResolver: %w", err)
 	}
 
+	container.Provide(func() (*fluentbitlogger.Logger, error) {
+		return fluentbitlogger.NewLogger(nodeip, port)
+	})
 	return container, nil
 }
 

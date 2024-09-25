@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"strings"
 	"tgs-automation/internal/config"
+	"tgs-automation/internal/fluentbitlogger"
 	"tgs-automation/internal/nats"
 	"tgs-automation/internal/telegram"
 	"tgs-automation/pkg/namecheap"
@@ -36,6 +37,7 @@ func CreateDomainHandler(
 	api namecheap.NamecheapApi,
 	natsSvc nats.NatsPublisherService,
 	telegramBot *telegram.TelegramBot,
+	logger *fluentbitlogger.Logger,
 ) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var request CreateDomainRequest
@@ -74,7 +76,7 @@ func CreateDomainHandler(
 		message := formatDomainMessage(status, request.Domain, promotionCode, chargeAmount, errorMsg, balance, currency)
 		err = telegramBot.SendMessageWithChatIdAndContext(c.Request.Context(), request.ChatId, message)
 		if err != nil {
-			fmt.Println("Failed to send Telegram message:", err)
+			logger.Error(fmt.Sprintln("Failed to send Telegram message:", err))
 		}
 
 		c.JSON(http.StatusOK, gin.H{"status": status, "message": message})

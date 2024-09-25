@@ -9,6 +9,7 @@ import (
 	_ "tgs-automation/features/domain-api/docs"
 	"tgs-automation/internal/config"
 	"tgs-automation/internal/dnsresolver"
+	"tgs-automation/internal/fluentbitlogger"
 	middleware "tgs-automation/internal/middleware"
 	"tgs-automation/internal/nats"
 	"tgs-automation/internal/opentelemetry"
@@ -26,7 +27,7 @@ import (
 func main() {
 	gin.SetMode(gin.ReleaseMode)
 	ctx := context.Background()
-	container, err := BuildContainer(ctx)
+	container, err := BuildContainer(ctx, os.Getenv("NodeIP"), 24224)
 	if err != nil {
 		log.Fatalf("Failed to build container: %v", err)
 	}
@@ -40,6 +41,7 @@ func main() {
 		namecheapSvc namecheap.NamecheapApi,
 		natsSvc nats.NatsPublisherService,
 		dnsResolver *dnsresolver.DNSResolver,
+		logger *fluentbitlogger.Logger,
 	) error {
 
 		if err := telemetry.Initialize(ctx, ":8889"); err != nil {
@@ -57,6 +59,7 @@ func main() {
 			namecheapSvc,
 			natsSvc,
 			dnsResolver,
+			logger,
 		)
 		server := &http.Server{
 			Addr:    ":8080",
@@ -85,7 +88,8 @@ func setupRouter(
 	cloudflareSvc cloudflare.CloudflareApi,
 	namecheapSvc namecheap.NamecheapApi,
 	natsSvc nats.NatsPublisherService,
-	dnsresolver *dnsresolver.DNSResolver) *gin.Engine {
+	dnsresolver *dnsresolver.DNSResolver,
+	logger *fluentbitlogger.Logger) *gin.Engine {
 
 	router := gin.Default()
 	router.ForwardedByClientIP = true
@@ -96,10 +100,10 @@ func setupRouter(
 	router.GET("/healthz", healthCheckHandler)
 	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 	router.GET("/token", jwttoken.TokenHandler(tokenService, apikeyAuth))
-	router.GET("/nameserver", middleware.AuthMiddleware(), GetNameServerHandler(config, cloudflareSvc, natsSvc, telegramBot, dnsresolver))
-	router.PUT("/nameserver", middleware.AuthMiddleware(), UpdateNameServerHandler(config, namecheapSvc, natsSvc, telegramBot))
-	router.GET("/domain/price", middleware.AuthMiddleware(), GetDomainPriceHandler(config, namecheapSvc, natsSvc, telegramBot))
-	router.POST("/domain", middleware.AuthMiddleware(), CreateDomainHandler(config, namecheapSvc, natsSvc, telegramBot))
+	router.GET("/nameserver", middleware.AuthMiddleware(), GetNameServerHandler(config, cloudflareSvc, natsSvc, telegramBot, dnsresolver, logger))
+	router.PUT("/nameserver", middleware.AuthMiddleware(), UpdateNameServerHandler(config, namecheapSvc, natsSvc, telegramBot, logger))
+	router.GET("/domain/price", middleware.AuthMiddleware(), GetDomainPriceHandler(config, namecheapSvc, natsSvc, telegramBot, logger))
+	router.POST("/domain", middleware.AuthMiddleware(), CreateDomainHandler(config, namecheapSvc, natsSvc, telegramBot, logger))
 
 	return router
 }

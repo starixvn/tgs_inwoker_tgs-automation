@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"reflect"
 	"tgs-automation/internal/config"
-	"tgs-automation/internal/log"
+	"tgs-automation/internal/fluentbitlogger"
 	"tgs-automation/internal/nats"
 	"tgs-automation/internal/telegram"
 	"tgs-automation/pkg/namecheap"
@@ -51,6 +51,7 @@ func GetDomainPriceHandler(
 	api namecheap.NamecheapApi,
 	natsSvc nats.NatsPublisherService,
 	telegramBot *telegram.TelegramBot,
+	logger *fluentbitlogger.Logger,
 ) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		printAllFields(c)
@@ -63,7 +64,7 @@ func GetDomainPriceHandler(
 		ctx, cancel := context.WithTimeout(c.Request.Context(), 10*time.Second)
 		defer cancel()
 
-		log.LogInfo(fmt.Sprintf("Request data: %+v", request))
+		logger.Info(fmt.Sprintf("Request data: %+v", request))
 
 		isAvailable, err := api.CheckDomainAvailable(ctx, request.Domain)
 		if err != nil {
@@ -95,7 +96,7 @@ func GetDomainPriceHandler(
 
 		err = telegramBot.SendMessageWithChatIdAndContext(ctx, request.ChatId, message)
 		if err != nil {
-			fmt.Println("Failed to send Telegram message:", err)
+			logger.Error("Failed to send Telegram message:" + err.Error())
 		}
 
 		c.JSON(http.StatusBadRequest, gin.H{"info": message})

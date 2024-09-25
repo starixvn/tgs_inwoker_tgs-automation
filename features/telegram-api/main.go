@@ -8,6 +8,7 @@ import (
 	"os"
 	_ "tgs-automation/features/domain-api/docs"
 	"tgs-automation/internal/config"
+	"tgs-automation/internal/fluentbitlogger"
 	middleware "tgs-automation/internal/middleware"
 	"tgs-automation/internal/opentelemetry"
 	"tgs-automation/internal/telegram"
@@ -26,7 +27,7 @@ type SendTelegramRequest struct {
 	ServiceName string `json:"service_name"`
 }
 
-func BuildContainer() (*dig.Container, error) {
+func BuildContainer(nodeip string, port int) (*dig.Container, error) {
 	container := dig.New()
 	if err := container.Provide(config.NewConfigManager); err != nil {
 		return nil, fmt.Errorf("failed to provide ConfigManager: %w", err)
@@ -51,6 +52,10 @@ func BuildContainer() (*dig.Container, error) {
 	if err := container.Provide(ProvideTelegramBot); err != nil {
 		return nil, fmt.Errorf("failed to provide TelegramBotInstance: %w", err)
 	}
+
+	container.Provide(func() (*fluentbitlogger.Logger, error) {
+		return fluentbitlogger.NewLogger(nodeip, port)
+	})
 	return container, nil
 }
 
@@ -64,7 +69,7 @@ func ProvideTelegramBot(config config.TgsConfig) (*telegram.TelegramBot, error) 
 
 func main() {
 	gin.SetMode(gin.ReleaseMode)
-	container, err := BuildContainer()
+	container, err := BuildContainer(os.Getenv("NodeIP"), 24224)
 	if err != nil {
 		log.Fatalf("Failed to build container: %v", err)
 	}

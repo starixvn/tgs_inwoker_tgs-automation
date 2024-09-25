@@ -6,7 +6,7 @@ import (
 	"strings"
 	"tgs-automation/internal/config"
 	"tgs-automation/internal/dnsresolver"
-	"tgs-automation/internal/log"
+	"tgs-automation/internal/fluentbitlogger"
 	"tgs-automation/internal/nats"
 	"tgs-automation/internal/telegram"
 	"tgs-automation/pkg/cloudflare"
@@ -42,6 +42,7 @@ func UpdateNameServerHandler(
 	svc namecheap.NamecheapApi,
 	natsSvc nats.NatsPublisherService,
 	telegramBot *telegram.TelegramBot,
+	logger *fluentbitlogger.Logger,
 ) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		printAllFields(c)
@@ -66,7 +67,7 @@ func UpdateNameServerHandler(
 
 		err = telegramBot.SendMessageWithChatIdAndContext(c.Request.Context(), request.ChatId, message)
 		if err != nil {
-			fmt.Println("Failed to send Telegram message:", err)
+			logger.Error("Failed to send Telegram message:" + err.Error())
 		}
 
 		c.JSON(http.StatusOK, gin.H{"data": message})
@@ -91,6 +92,7 @@ func GetNameServerHandler(
 	natsSvc nats.NatsPublisherService,
 	telegramBot *telegram.TelegramBot,
 	resolver *dnsresolver.DNSResolver,
+	logger *fluentbitlogger.Logger,
 ) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var request GetNameServerRequest
@@ -99,7 +101,7 @@ func GetNameServerHandler(
 			return
 		}
 
-		log.LogInfo(fmt.Sprintf("Request data: %+v", request))
+		logger.Info(fmt.Sprintf("Request data: %+v", request))
 		targetNameServer, err := cloudflareApi.GetTargetNameServers(request.Domain)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Could not get target nameserver", "details": err.Error()})
@@ -114,12 +116,12 @@ func GetNameServerHandler(
 
 		message := fmt.Sprintf("Domain: %s\nNameServers: %s\nOriginal Nameservers: %s", request.Domain, targetNameServer, originNameServer)
 
-		//log.LogInfo(fmt.Sprintf("TelegramApi", config.ApiUrl.TelegramApi))
+		logger.Info(fmt.Sprintf("TelegramApi", config.ApiUrl.TelegramApi))
 
 		err = telegramBot.SendMessageWithChatIdAndContext(c.Request.Context(), request.ChatId, message)
 
 		if err != nil {
-			fmt.Println("Failed to send Telegram message:", err)
+			logger.Error(fmt.Sprintln("Failed to send Telegram message:", err))
 		}
 		c.JSON(http.StatusOK, gin.H{"data": message})
 	}
