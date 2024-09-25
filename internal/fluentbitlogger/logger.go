@@ -3,27 +3,30 @@ package fluentbitlogger
 import (
 	"fmt"
 	"log"
-	"net"
-	"time"
+
+	"github.com/fluent/fluent-logger-golang/fluent"
 )
 
 type Logger struct {
-	conn   net.Conn
-	logger *log.Logger
+	logger *fluent.Fluent
+	tag    string
 }
 
-func NewLogger(fluentBitIP string, port int) (*Logger, error) {
-	address := fmt.Sprintf("%s:%d", fluentBitIP, port)
-	conn, err := net.Dial("tcp", address)
-	if err != nil {
-		return nil, err
+// NewLogger 使用 fluent-logger-golang 初始化 Fluent Bit Logger
+func NewLogger(fluentBitIP string, port int, serviceName string) (*Logger, error) {
+	config := fluent.Config{
+		FluentPort: port,
+		FluentHost: fluentBitIP,
 	}
 
-	logger := log.New(conn, "", log.LstdFlags)
+	logger, err := fluent.New(config)
+	if err != nil {
+		return nil, fmt.Errorf("failed to connect to Fluent Bit: %w", err)
+	}
 
 	return &Logger{
-		conn:   conn,
 		logger: logger,
+		tag:    serviceName,
 	}, nil
 }
 
@@ -44,10 +47,18 @@ func (l *Logger) Fatal(message string) {
 
 // log 是內部方法，用於記錄日誌並附帶時間戳
 func (l *Logger) log(level string, message string) {
-	l.logger.Println("{\"level\":\"" + level + "\", \"message\":\"" + message + "\", \"time\":\"" + time.Now().Format(time.RFC3339) + "\"}")
+	data := map[string]string{
+		"level":   level,
+		"message": message,
+	}
+
+	err := l.logger.Post(l.tag, data)
+	if err != nil {
+		log.Printf("failed to send log to Fluent Bit: %v", err)
+	}
 }
 
-// Close 關閉日誌文件
+// Close 關閉與 Fluent Bit 的連接
 func (l *Logger) Close() error {
-	return l.conn.Close()
+	return l.logger.Close()
 }

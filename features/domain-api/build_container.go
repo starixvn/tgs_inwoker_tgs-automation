@@ -16,7 +16,7 @@ import (
 	"go.uber.org/dig"
 )
 
-func BuildContainer(ctx context.Context, nodeip string, port int) (*dig.Container, error) {
+func BuildContainer(ctx context.Context, nodeip string, port int, serivceName string) (*dig.Container, error) {
 	container := dig.New()
 	if err := container.Provide(config.NewConfigManager); err != nil {
 		return nil, fmt.Errorf("failed to provide ConfigManager: %w", err)
@@ -65,7 +65,7 @@ func BuildContainer(ctx context.Context, nodeip string, port int) (*dig.Containe
 	}
 
 	container.Provide(func() (*fluentbitlogger.Logger, error) {
-		return fluentbitlogger.NewLogger(nodeip, port)
+		return fluentbitlogger.NewLogger(nodeip, port, serivceName)
 	})
 	return container, nil
 }

@@ -27,7 +27,7 @@ type SendTelegramRequest struct {
 	ServiceName string `json:"service_name"`
 }
 
-func BuildContainer(nodeip string, port int) (*dig.Container, error) {
+func BuildContainer(nodeip string, port int, sreviceName string) (*dig.Container, error) {
 	container := dig.New()
 	if err := container.Provide(config.NewConfigManager); err != nil {
 		return nil, fmt.Errorf("failed to provide ConfigManager: %w", err)
@@ -54,7 +54,7 @@ func BuildContainer(nodeip string, port int) (*dig.Container, error) {
 	}
 
 	container.Provide(func() (*fluentbitlogger.Logger, error) {
-		return fluentbitlogger.NewLogger(nodeip, port)
+		return fluentbitlogger.NewLogger(nodeip, port, sreviceName)
 	})
 	return container, nil
 }
@@ -69,7 +69,7 @@ func ProvideTelegramBot(config config.TgsConfig) (*telegram.TelegramBot, error) 
 
 func main() {
 	gin.SetMode(gin.ReleaseMode)
-	container, err := BuildContainer(os.Getenv("NODE_IP"), 24224)
+	container, err := BuildContainer(os.Getenv("NODE_IP"), 24224, os.Getenv("OTEL_SERVICE_NAME"))
 	if err != nil {
 		log.Fatalf("Failed to build container: %v", err)
 	}
